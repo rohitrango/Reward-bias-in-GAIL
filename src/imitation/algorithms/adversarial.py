@@ -47,6 +47,8 @@ class AdversarialTrainer:
                disc_minibatch_size: int = 256,
                disc_opt_cls: tf.train.Optimizer = tf.train.AdamOptimizer,
                disc_opt_kwargs: dict = {},
+               normalize: bool = False,
+               normalize_kwargs: dict = {},
                gen_replay_buffer_capacity: Optional[int] = None,
                init_tensorboard: bool = False,
                init_tensorboard_graph: bool = False,
@@ -136,7 +138,12 @@ class AdversarialTrainer:
           self.venv, self.reward_test)
 
     self.venv_train_buffering = BufferingWrapper(self.venv_train)
-    self.venv_train_norm = VecNormalize(self.venv_train_buffering)
+    if normalize:
+        self.venv_train_norm = VecNormalize(self.venv_train_buffering, **normalize_kwargs)
+    else:
+        self.venv_train_norm = VecNormalize(self.venv_train_buffering, norm_obs=False, norm_reward=False)
+
+    # Set this to be generator venv
     self.gen_policy.set_env(self.venv_train_norm)
 
     if gen_replay_buffer_capacity is None:
@@ -177,7 +184,10 @@ class AdversarialTrainer:
       observation: Unnormalized observation.
       actions: action.
     """
-    obs = self.venv_train_norm.normalize_obs(observation)
+    try:
+        obs = self.venv_train_norm.normalize_obs(observation)
+    except:
+        obs = observation
     return self.gen_policy.action_probability(obs, actions=actions, logp=logp)
 
   def train_disc(self, n_samples: Optional[int] = None) -> None:
@@ -365,8 +375,12 @@ class AdversarialTrainer:
     assert n_gen == len(gen_samples.next_obs)
 
     # Policy and reward network were trained on normalized observations.
-    expert_obs_norm = self.venv_train_norm.normalize_obs(expert_samples.obs)
-    gen_obs_norm = self.venv_train_norm.normalize_obs(gen_samples.obs)
+    try:
+        expert_obs_norm = self.venv_train_norm.normalize_obs(expert_samples.obs)
+        gen_obs_norm = self.venv_train_norm.normalize_obs(gen_samples.obs)
+    except:
+        expert_obs_norm = expert_samples.obs
+        gen_obs_norm = gen_samples.obs
 
     # Concatenate rollouts, and label each row as expert or generator.
     obs = np.concatenate([expert_obs_norm, gen_obs_norm])
@@ -396,9 +410,11 @@ def init_trainer(env_name: str,
                  *,
                  log_dir: str,
                  seed: int = 0,
-                 use_gail: bool = False,
+                 use_gail: bool = True,
                  num_vec: int = 8,
                  parallel: bool = False,
+                 normalize: bool = False,
+                 normalize_kwargs: dict = {},
                  max_episode_steps: Optional[int] = None,
                  scale: bool = True,
                  airl_entropy_weight: float = 1.0,
@@ -454,5 +470,7 @@ def init_trainer(env_name: str,
 
   expert_demos = util.rollout.flatten_trajectories(expert_trajectories)
   trainer = AdversarialTrainer(env, gen_policy, discrim, expert_demos,
+                                normalize=normalize,
+                                normalize_kwargs=normalize_kwargs,
                                log_dir=log_dir, **trainer_kwargs)
   return trainer

@@ -61,8 +61,8 @@ setup(
     ],
     tests_require=TESTS_REQUIRE,
     extras_require={
-        'gpu': [f'tensorflow-gpu{TF_VERSION}'],
-        'cpu': [f'tensorflow{TF_VERSION}'],
+        'gpu': ['tensorflow-gpu{}'.format(TF_VERSION)],
+        'cpu': ['tensorflow{}'.format(TF_VERSION)],
         # recommended packages for development
         'dev': [
             'autopep8',

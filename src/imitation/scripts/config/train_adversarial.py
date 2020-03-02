@@ -8,9 +8,9 @@ from stable_baselines.common import policies
 from imitation import util
 from imitation.policies import base
 from imitation.scripts.config.common import DEFAULT_INIT_RL_KWARGS
+from stable_baselines.common.policies import minigrid_extractor_small, minigrid_extractor
 
 train_ex = sacred.Experiment("train_adversarial", interactive=True)
-
 
 @train_ex.config
 def train_defaults():
@@ -20,6 +20,11 @@ def train_defaults():
   n_expert_demos = None  # Num demos used. None uses every demo possible
   n_episodes_eval = 50  # Num of episodes for final mean ground truth return
   airl_entropy_weight = 1.0
+  model_name = None
+  assert model_name is not None
+
+  normalize = True  # Use VecNormalize
+  normalize_kwargs = dict()  # kwargs for `VecNormalize`
 
   # Number of epochs in between plots (<0 disables) (=0 means final plot only)
   plot_interval = -1
@@ -43,7 +48,7 @@ def train_defaults():
                           **DEFAULT_INIT_RL_KWARGS),
   )
 
-  log_root = os.path.join("output", "train_adversarial")  # output directory
+  log_root = os.path.join('/serverdata/rohit/reward_bias/imitation', "output", "train_adversarial")  # output directory
   checkpoint_interval = 0  # num epochs between checkpoints (<0 disables)
   init_tensorboard = False  # If True, then write Tensorboard logs.
   rollout_hint = None  # Used to generate default rollout_path
@@ -88,9 +93,8 @@ def calc_n_steps(init_trainer_kwargs, gen_batch_size):
 
 
 @train_ex.config
-def paths(env_name, log_root, rollout_hint, data_dir):
-  log_dir = os.path.join(log_root, env_name.replace('/', '_'),
-                         util.make_unique_timestamp())
+def paths(env_name, model_name, log_root, rollout_hint, data_dir):
+  log_dir = os.path.join(log_root, env_name.replace('/', '_'), model_name)
 
   # Recommended that user sets rollout_path manually.
   # By default we guess the named config associated with `env_name`
@@ -101,7 +105,6 @@ def paths(env_name, log_root, rollout_hint, data_dir):
                               "expert_models",
                               f"{rollout_hint}_0",
                               "rollouts", "final.pkl")
-
   assert os.path.exists(rollout_path), rollout_path
 
 
@@ -226,6 +229,35 @@ def walker():
   locals().update(**MUJOCO_SHARED_LOCALS)
   env_name = "Walker2d-v2"
   rollout_hint = "walker"
+
+
+@train_ex.named_config
+def empty():
+    env_name = 'MiniGrid-Empty-Random-6x6-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='EmptyPPO'
+    normalize=False
+
+
+@train_ex.named_config
+def negative_reward():
+    init_trainer_kwargs = {
+        'discrim_kwargs': {
+            'reward_type': 'negative'
+        }
+    }
 
 
 # Custom Gym environment named configs

@@ -11,6 +11,7 @@ from typing import Optional
 
 from sacred.observers import FileStorageObserver
 import tensorflow as tf
+from stable_baselines.common.vec_env import VecEnv, VecNormalize
 
 from imitation.algorithms.adversarial import init_trainer
 import imitation.envs.examples  # noqa: F401
@@ -37,6 +38,8 @@ def train(_run,
           _seed: int,
           env_name: str,
           rollout_path: str,
+          normalize: bool,
+          normalize_kwargs: dict,
           n_expert_demos: Optional[int],
           log_dir: str,
           init_trainer_kwargs: dict,
@@ -132,6 +135,7 @@ def train(_run,
 
     trainer = init_trainer(env_name, expert_trajs,
                            seed=_seed, log_dir=log_dir,
+                           normalize=normalize, normalize_kwargs=normalize_kwargs,
                            **init_trainer_kwargs)
 
     def callback(epoch):

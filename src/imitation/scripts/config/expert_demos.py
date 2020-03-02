@@ -5,6 +5,8 @@ import sacred
 from imitation.scripts.config.common import DEFAULT_INIT_RL_KWARGS
 from imitation.util import util
 
+from stable_baselines.common.policies import minigrid_extractor_small, minigrid_extractor
+
 expert_demos_ex = sacred.Experiment("expert_demos")
 
 
@@ -18,6 +20,8 @@ def expert_demos_defaults():
   normalize_kwargs = dict()  # kwargs for `VecNormalize`
   max_episode_steps = None  # Set to positive int to limit episode horizons
   n_episodes_eval = 50  # Num of episodes for final ep reward mean evaluation
+  model_name = None
+  assert model_name is not None
 
   init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
 
@@ -35,7 +39,7 @@ def expert_demos_defaults():
 
   init_tensorboard = False  # If True, then write Tensorboard logs.
 
-  log_root = os.path.join("output", "expert_demos")  # output directory
+  log_root = os.path.join('/serverdata/rohit/reward_bias/imitation', "output", "expert_demos")  # output directory
 
 
 @expert_demos_ex.config
@@ -48,9 +52,8 @@ def default_end_cond(rollout_save_n_timesteps, rollout_save_n_episodes):
 
 
 @expert_demos_ex.config
-def logging(env_name, log_root):
-  log_dir = os.path.join(log_root, env_name.replace('/', '_'),
-                         util.make_unique_timestamp())
+def logging(env_name, model_name, log_root):
+  log_dir = os.path.join(log_root, env_name.replace('/', '_'), model_name)
 
 
 @expert_demos_ex.config
@@ -143,6 +146,18 @@ def disabled_ant():
 @expert_demos_ex.named_config
 def two_d_maze():
   env_name = "imitation/TwoDMaze-v0"
+
+
+###### Configs for MiniGrid
+@expert_demos_ex.named_config
+def empty():
+    env_name = 'MiniGrid-Empty-Random-6x6-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
 
 
 # Debug configs

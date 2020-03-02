@@ -360,6 +360,26 @@ def build_mlp_discrim_net(obs_input: tf.Tensor, act_input: tf.Tensor,
   return disc_mlp, disc_logits
 
 
+def build_cnn_discrim_net(obs_input: tf.Tensor, act_input: tf.Tensor, cnn_extractor=None,
+                          *, hidden_sizes: Iterable[int] = (32, 32)):
+  """Builds a simple CNN-based discriminator for GAIL. The returned function
+  can be passed into the `build_discrim_net` argument of `DiscrimNetGAIL`.
+
+  Args:
+    obs_input: observation seen at this time step.
+    act_input: action taken at this time step.
+    hidden_sizes: list of layer sizes for each hidden layer of the network.
+  """
+  cnn_input = cnn_extractor(obs_input)
+  inputs = tf.concat([
+    tf.layers.flatten(cnn_input),
+    tf.layers.flatten(act_input)], axis=1)
+
+  disc_mlp = util.build_mlp(hid_sizes=hidden_sizes)
+  disc_logits = util.sequential(inputs, disc_mlp)
+  return disc_mlp, disc_logits
+
+
 class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
   """The discriminator to use for GAIL."""
 
@@ -367,7 +387,8 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
         self,
         observation_space: gym.Space,
         action_space: gym.Space,
-        build_discrim_net: DiscrimNetBuilder = build_mlp_discrim_net,
+        reward_type: str = '',
+        build_discrim_net: DiscrimNetBuilder = None,
         build_discrim_net_kwargs: Optional[dict] = None,
         scale: bool = False):
     """Construct discriminator network.
@@ -388,9 +409,17 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
     """
     # for serialisation
     args = dict(locals())
+    self.reward_type = reward_type
 
     # things we'll need in .build_graph()
     self._observation_space = observation_space
+    if len(observation_space.shape) < 3:
+        build_discrim_net = build_mlp_discrim_net
+        print("Using MLP for discriminator")
+    else:
+        build_discrim_net = build_cnn_discrim_net
+        print("Using CNN for discriminator")
+
     self._action_space = action_space
     self._scale = scale
     self._build_discrim_net = build_discrim_net
@@ -427,8 +456,16 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
     with tf.variable_scope("discrim_network"):
       self._disc_mlp, self._disc_logits_gen_is_high = self._build_discrim_net(
           self.obs_input, self.act_input, **self._build_discrim_net_kwargs)
-    self._policy_test_reward = self._policy_train_reward \
+
+    # Get test and train reward based on type
+    if self.reward_type == 'positive':
+      self._policy_test_reward = self._policy_train_reward \
         = -tf.log_sigmoid(self._disc_logits_gen_is_high)
+    elif self.reward_type == 'negative':
+      self._policy_test_reward = self._policy_train_reward \
+        = tf.log_sigmoid(-self._disc_logits_gen_is_high)
+    else:
+      raise NotImplementedError
 
     self._disc_loss = tf.nn.sigmoid_cross_entropy_with_logits(
         logits=self._disc_logits_gen_is_high,

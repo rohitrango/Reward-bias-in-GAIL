@@ -17,6 +17,9 @@ from stable_baselines.common.policies import BasePolicy, MlpPolicy
 from stable_baselines.common.vec_env import DummyVecEnv, SubprocVecEnv, VecEnv
 import tensorflow as tf
 
+import gym_minigrid
+from gym_minigrid import wrappers as mgwr
+
 # TODO(adam): this should really be OrderedDict but that breaks Python
 # See https://stackoverflow.com/questions/41207128/
 LayersDict = Dict[str, tf.layers.Layer]
@@ -77,13 +80,24 @@ def make_vec_env(env_name: str,
     elif spec.max_episode_steps is not None:
       env = TimeLimit(env, max_episode_steps=spec.max_episode_steps)
 
+    # If minigrid, then use some postprocessing of the env
+    keep_classes = ['goal', 'agent', 'wall', 'empty']
+    ename = env_name.lower()
+    if 'door' in ename:
+        keep_classes.extend(['door', 'key'])
+
+    if env_name.startswith('MiniGrid'):
+      env = mgwr.FullyObsWrapper(env)
+      env = mgwr.ImgObsWrapper(env)
+      env = mgwr.FullyObsOneHotWrapper(env, drop_color=1, keep_classes=keep_classes, flatten=False)
+
     # Use Monitor to record statistics needed for Baselines algorithms logging
     # Optionally, save to disk
     log_path = None
     if log_dir is not None:
       log_subdir = os.path.join(log_dir, 'monitor')
       os.makedirs(log_subdir, exist_ok=True)
-      log_path = os.path.join(log_subdir, f'mon{i:03d}')
+      log_path = os.path.join(log_subdir, f'{i:03d}')
     return MonitorPlus(env, log_path, allow_early_resets=True)
   rng = np.random.RandomState(seed)
   env_seeds = rng.randint(0, (1 << 31) - 1, (n_envs, ))
@@ -113,6 +127,7 @@ def init_rl(env: Union[gym.Env, VecEnv],
   Returns:
     An RL algorithm.
   """
+  print(model_kwargs)
   return model_class(policy_class,
                      env, **model_kwargs)  # pytype: disable=not-instantiable
 
