@@ -245,6 +245,7 @@ class AdversarialTrainer:
       fd = self._build_disc_feed_dict(gen_samples=gen_samples,
                                       expert_samples=expert_samples)
       fetched = self._sess.run(fetches, feed_dict=fd)
+      self._discrim.clip_params()
 
       if write_summaries:
         self._summary_writer.add_summary(fetched['events'], fetched['step'])

@@ -388,6 +388,7 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
         observation_space: gym.Space,
         action_space: gym.Space,
         reward_type: str = '',
+        wgan_clip: float = 0.01,
         build_discrim_net: DiscrimNetBuilder = None,
         build_discrim_net_kwargs: Optional[dict] = None,
         scale: bool = False):
@@ -410,6 +411,7 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
     # for serialisation
     args = dict(locals())
     self.reward_type = reward_type
+    self.wgan_clip = wgan_clip
 
     # things we'll need in .build_graph()
     self._observation_space = observation_space
@@ -434,6 +436,12 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
     serialize.LayersSerializable.__init__(**args, layers=self._disc_mlp)
 
     tf.logging.info("using GAIL")
+    # Add a var list to clip if using wgan
+    var_list = self.get_trainable_variables()
+    self.clip_list = [tf.assign(var, tf.clip_by_value(var, -self.wgan_clip, self.wgan_clip)) for var in var_list]
+
+  def get_trainable_variables(self):
+    return tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, "discrim_network")
 
   @property
   def obs_ph(self):
@@ -446,6 +454,10 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
   @property
   def next_obs_ph(self):
     return self._next_obs_ph
+
+  def clip_params(self):
+    if self.reward_type == 'wgan':
+      self._sess.run(self.clip_list)
 
   def build_graph(self):
     inputs = util.build_inputs(self._observation_space, self._action_space,
@@ -464,10 +476,21 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
     elif self.reward_type == 'negative':
       self._policy_test_reward = self._policy_train_reward \
         = tf.log_sigmoid(-self._disc_logits_gen_is_high)
+    elif self.reward_type == 'wgan':
+      self._policy_test_reward = self._policy_train_reward \
+        = self._disc_logits_gen_is_high / self.wgan_clip
     else:
       raise NotImplementedError
 
-    self._disc_loss = tf.nn.sigmoid_cross_entropy_with_logits(
-        logits=self._disc_logits_gen_is_high,
-        labels=tf.cast(self.labels_gen_is_one_ph, tf.float32),
-    )
+
+    # Get loss function
+    if self.reward_type != 'wgan':
+        self._disc_loss = tf.nn.sigmoid_cross_entropy_with_logits(
+            logits=self._disc_logits_gen_is_high,
+            labels=tf.cast(self.labels_gen_is_one_ph, tf.float32),
+        )
+    else:
+        # gen * 1 + expert * -1 -----> will minimize generator logits
+        # reward will be logits_gen_is_high
+        self._disc_loss = (tf.cast(self.labels_gen_is_one_ph, tf.float32)*2 - 1) * self._disc_logits_gen_is_high
+

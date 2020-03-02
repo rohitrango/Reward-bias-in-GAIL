@@ -93,17 +93,18 @@ def calc_n_steps(init_trainer_kwargs, gen_batch_size):
 
 
 @train_ex.config
-def paths(env_name, model_name, log_root, rollout_hint, data_dir):
-  log_dir = os.path.join(log_root, env_name.replace('/', '_'), model_name)
+def paths(env_name, model_name, log_root, rollout_hint, data_dir, seed):
+  log_dir = os.path.join(log_root, env_name.replace('/', '_'), model_name, str(seed))
 
   # Recommended that user sets rollout_path manually.
   # By default we guess the named config associated with `env_name`
   # and attempt to load rollouts from `data/expert_models/`.
+  _d_root = os.path.join('/serverdata/rohit/reward_bias/imitation', "output", "expert_demos")  # output directory
   if rollout_hint is None:
     rollout_hint = env_name.split("-")[0].lower()
-  rollout_path = os.path.join(data_dir,
-                              "expert_models",
-                              f"{rollout_hint}_0",
+  rollout_path = os.path.join(_d_root,
+                              env_name,
+                              f"{rollout_hint}",
                               "rollouts", "final.pkl")
   assert os.path.exists(rollout_path), rollout_path
 
@@ -259,6 +260,14 @@ def negative_reward():
         }
     }
 
+@train_ex.named_config
+def wgan():
+    init_trainer_kwargs = {
+        'discrim_kwargs': {
+            'reward_type': 'wgan',
+            'wgan_clip'  : 0.01,
+        }
+    }
 
 # Custom Gym environment named configs
 
