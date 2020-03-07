@@ -33,17 +33,17 @@ def train_defaults():
   extra_episode_data_interval = -1
   show_plots = True  # Show plots in addition to saving them
 
+
   init_trainer_kwargs = dict(
       num_vec=8,  # Must evenly divide gen_batch_size
       parallel=True,  # Use SubprocVecEnv (generally faster if num_vec>1)
       max_episode_steps=None,  # Set to positive int to limit episode horizons
       scale=True,
-
       reward_kwargs=dict(
           theta_units=[32, 32],
           phi_units=[32, 32],
       ),
-
+      use_bc = False,
       init_rl_kwargs=dict(policy_class=base.FeedForward32Policy,
                           **DEFAULT_INIT_RL_KWARGS),
   )
@@ -60,6 +60,7 @@ def train_defaults():
   disc_batch_size = 2048  # Batch size for discriminator updates.
   disc_minibatch_size = 512  # Num discriminator updates per batch
   gen_batch_size = 2048  # Batch size for generator updates.
+
 
 
 @train_ex.config
@@ -116,6 +117,20 @@ def gail():
   init_trainer_kwargs = dict(
       use_gail=True,
   )
+
+@train_ex.named_config
+def bc():
+    init_trainer_kwargs = dict(use_bc=True)
+    total_timesteps = 100
+
+@train_ex.named_config
+def notraj():
+    init_trainer_kwargs = dict(
+            trainer_kwargs=dict(
+                disc_opt_kwargs=dict(
+                        learning_rate=0,
+            )
+        ))
 
 
 @train_ex.named_config
@@ -234,6 +249,8 @@ def walker():
 
 @train_ex.named_config
 def empty():
+    total_timesteps = int(2e5)
+    gen_batch_size = 2048 * 8
     env_name = 'MiniGrid-Empty-Random-6x6-v0'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
@@ -251,6 +268,26 @@ def empty():
     rollout_hint='EmptyPPO'
     normalize=False
 
+@train_ex.named_config
+def doorkey():
+    total_timesteps = int(1e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-DoorKey-6x6-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='DoorKeyPPO'
+    normalize=False
 
 @train_ex.named_config
 def negative_reward():

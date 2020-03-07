@@ -159,9 +159,53 @@ def empty():
             }
     normalize=False
 
+@expert_demos_ex.named_config
+def doorkey():
+    env_name = 'MiniGrid-DoorKey-6x6-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
 
+@expert_demos_ex.named_config
+def redblue():
+    env_name = 'MiniGrid-RedBlueDoors-6x6-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 2048
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+
+@expert_demos_ex.named_config
+def redblue8x8():
+    env_name = 'MiniGrid-RedBlueDoors-8x8-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 2048
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(1e7)
 # Debug configs
 
+@expert_demos_ex.named_config
+def lava():
+    env_name = 'MiniGrid-LavaCrossingS9N1-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 2048
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor,
+            }
+    normalize=False
+    total_timesteps=int(1e6)
+
+# Debug configs
 @expert_demos_ex.named_config
 def fast():
   """Intended for testing purposes: small # of updates, ends quickly."""

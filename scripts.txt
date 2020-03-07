@@ -1,3 +1,4 @@
 python -m imitation.scripts.expert_demos with empty rollout_save_n_episodes=1000 seed=1 total_timesteps=100000 model_name=EmptyPPO
 python -m imitation.scripts.train_adversarial print_config with empty model_name=EmptyGAIL rollout_path=/serverdata/rohit/reward_bias/imitation/output/expert_demos/MiniGrid-Empty-Random-6x6-v0/EmptyPPO/rollouts/final.pkl
 python -m imitation.scripts.train_adversarial with empty model_name=EmptyGAILpositive rollout_hint=EmptyPPO gail seed=2
+python -m imitation.scripts.expert_demos print_config with redblue model_name=redblue rollout_save_n_episodes=10000 seed=1

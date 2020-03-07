@@ -82,14 +82,25 @@ def make_vec_env(env_name: str,
 
     # If minigrid, then use some postprocessing of the env
     keep_classes = ['goal', 'agent', 'wall', 'empty']
+    drop_color = 1
     ename = env_name.lower()
-    if 'door' in ename:
+    # for doorkey env
+    if 'doorkey' in ename:
         keep_classes.extend(['door', 'key'])
+
+    # for redblue doors
+    if 'redblue' in ename:
+        keep_classes.extend(['door'])
+        drop_color = 0
+
+    if 'lava' in ename:
+        keep_classes.extend(['lava'])
+        drop_color = 1
 
     if env_name.startswith('MiniGrid'):
       env = mgwr.FullyObsWrapper(env)
       env = mgwr.ImgObsWrapper(env)
-      env = mgwr.FullyObsOneHotWrapper(env, drop_color=1, keep_classes=keep_classes, flatten=False)
+      env = mgwr.FullyObsOneHotWrapper(env, drop_color=drop_color, keep_classes=keep_classes, flatten=False)
 
     # Use Monitor to record statistics needed for Baselines algorithms logging
     # Optionally, save to disk

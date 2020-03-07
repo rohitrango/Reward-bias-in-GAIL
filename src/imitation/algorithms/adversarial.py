@@ -9,6 +9,7 @@ from stable_baselines.common.vec_env import VecEnv, VecNormalize
 import tensorflow as tf
 import tqdm
 
+from imitation.algorithms.bc import BCTrainer
 import imitation.rewards.discrim_net as discrim_net
 from imitation.rewards.reward_net import BasicShapedRewardNet
 import imitation.util as util
@@ -114,6 +115,10 @@ class AdversarialTrainer:
     self._discrim = discrim
     self._disc_opt_cls = disc_opt_cls
     self._disc_opt_kwargs = disc_opt_kwargs
+    print(self._disc_opt_kwargs)
+
+    # Update discriminator or not
+    self.update_discr = disc_opt_kwargs.get('learning_rate', None) != 0
     self._init_tensorboard = init_tensorboard
     self._init_tensorboard_graph = init_tensorboard_graph
     self._build_graph()
@@ -235,6 +240,8 @@ class AdversarialTrainer:
         'train_op_out': self._disc_train_op,
         'train_stats': self._discrim.train_stats,
       }
+      #if not self.update_discr:
+          #del fetches['train_op_out']
       # optionally write TB summaries for collected ops
       step = self._sess.run(self._global_step)
       write_summaries = self._init_tensorboard and step % 20 == 0
@@ -244,6 +251,7 @@ class AdversarialTrainer:
       # do actual update
       fd = self._build_disc_feed_dict(gen_samples=gen_samples,
                                       expert_samples=expert_samples)
+
       fetched = self._sess.run(fetches, feed_dict=fd)
       self._discrim.clip_params()
 
@@ -411,6 +419,7 @@ def init_trainer(env_name: str,
                  *,
                  log_dir: str,
                  seed: int = 0,
+                 use_bc: bool = False,
                  use_gail: bool = True,
                  num_vec: int = 8,
                  parallel: bool = False,
@@ -455,23 +464,28 @@ def init_trainer(env_name: str,
                           log_dir=log_dir, max_episode_steps=max_episode_steps)
   gen_policy = util.init_rl(env, verbose=1, **init_rl_kwargs)
 
-  if use_gail:
-    discrim = discrim_net.DiscrimNetGAIL(env.observation_space,
+  if not use_bc:
+    if use_gail:
+      discrim = discrim_net.DiscrimNetGAIL(env.observation_space,
                                          env.action_space,
                                          scale=scale,
                                          **discrim_kwargs)
-  else:
-    rn = BasicShapedRewardNet(env.observation_space,
-                              env.action_space,
-                              scale=scale,
-                              **reward_kwargs)
-    discrim = discrim_net.DiscrimNetAIRL(rn,
-                                         entropy_weight=airl_entropy_weight,
-                                         **discrim_kwargs)
+    else:
+      rn = BasicShapedRewardNet(env.observation_space,
+                                  env.action_space,
+                                  scale=scale,
+                                  **reward_kwargs)
+      discrim = discrim_net.DiscrimNetAIRL(rn,
+                                             entropy_weight=airl_entropy_weight,
+                                             **discrim_kwargs)
 
-  expert_demos = util.rollout.flatten_trajectories(expert_trajectories)
-  trainer = AdversarialTrainer(env, gen_policy, discrim, expert_demos,
+    expert_demos = util.rollout.flatten_trajectories(expert_trajectories)
+    trainer = AdversarialTrainer(env, gen_policy, discrim, expert_demos,
                                 normalize=normalize,
                                 normalize_kwargs=normalize_kwargs,
                                log_dir=log_dir, **trainer_kwargs)
+  else:
+    print("Using behavior cloning...")
+    expert_demos = util.rollout.flatten_trajectories(expert_trajectories)
+    trainer = BCTrainer(env, expert_demos=expert_demos, policy_kwargs=init_rl_kwargs['policy_kwargs'])
   return trainer

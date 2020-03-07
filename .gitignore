@@ -153,3 +153,4 @@ dmypy.json
 # cruft produced by one of the adversarial tests
 tests/data/reward_models
 tags
+logs

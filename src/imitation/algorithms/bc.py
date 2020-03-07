@@ -14,6 +14,7 @@ import tensorflow as tf
 from tqdm.autonotebook import tqdm, trange
 
 from imitation.policies.base import FeedForward32Policy
+from stable_baselines.common.policies import BasePolicy, FeedForwardPolicy
 from imitation.util import rollout
 
 
@@ -73,7 +74,8 @@ class BCTrainer:
                env,
                *,
                expert_demos: rollout.Transitions,
-               policy_class: Type[ActorCriticPolicy] = FeedForward32Policy,
+               policy_class: Type[ActorCriticPolicy] = FeedForwardPolicy,
+               policy_kwargs: dict = dict(),
                batch_size: int = 32,
                optimiser_cls: Type[tf.train.Optimizer] = tf.train.AdamOptimizer,
                optimiser_kwargs: Optional[dict] = None,
@@ -82,6 +84,7 @@ class BCTrainer:
     self.env = env
     self.policy_class = policy_class
     self.batch_size = batch_size
+    self._policy_kwargs = policy_kwargs
     if expert_demos is not None:
       self.set_expert_dataset(expert_demos)
     else:
@@ -157,6 +160,18 @@ class BCTrainer:
     reward_stats = rollout.rollout_stats(trajs)
     return reward_stats
 
+  @property
+  def gen_policy(self):
+    return self.policy
+
+  @property
+  def venv_train_norm(self):
+    return self.env
+
+  @property
+  def venv_test(self):
+    return self.env
+
   def _build_tf_graph(self):
     with tf.variable_scope('bc_supervised_loss'):
       with tf.variable_scope('model'):
@@ -166,9 +181,16 @@ class BCTrainer:
             n_batch=None,
             n_env=1,
             n_steps=1000)
+        for k, v in self._policy_kwargs.items():
+            self.policy_kwargs[k] = v
+        if self.policy_kwargs.get('cnn_extractor'):
+            self.policy_kwargs['feature_extraction'] = 'cnn'
+        #print(self.policy_class, self.policy_kwargs)
+        #input()
         self.policy = self.policy_class(
           sess=self.sess,
           **self.policy_kwargs)  # pytype: disable=not-instantiable
+        print(self.policy)
         inner_scope = tf.get_variable_scope().name
         self.policy_variables = tf.get_collection(
           tf.GraphKeys.TRAINABLE_VARIABLES, scope=inner_scope)

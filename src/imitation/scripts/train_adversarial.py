@@ -25,12 +25,15 @@ def save(trainer, save_path):
   """Save discriminator and generator."""
   # We implement this here and not in Trainer since we do not want to actually
   # serialize the whole Trainer (including e.g. expert demonstrations).
-  trainer.discrim.save(os.path.join(save_path, "discrim"))
-  # TODO(gleave): unify this with the saving logic in data_collect?
-  # (Needs #43 to be merged before attempting.)
-  serialize.save_stable_model(os.path.join(save_path, "gen_policy"),
+  try:
+    trainer.discrim.save(os.path.join(save_path, "discrim"))
+    # TODO(gleave): unify this with the saving logic in data_collect?
+    # (Needs #43 to be merged before attempting.)
+    serialize.save_stable_model(os.path.join(save_path, "gen_policy"),
                               trainer.gen_policy,
                               trainer.venv_train_norm)
+  except:
+    pass
 
 
 @train_ex.main
@@ -142,7 +145,10 @@ def train(_run,
       if checkpoint_interval > 0 and epoch % checkpoint_interval == 0:
         save(trainer, os.path.join(log_dir, "checkpoints", f"{epoch:05d}"))
 
-    trainer.train(total_timesteps, callback)
+    if init_trainer_kwargs['use_bc']:
+        trainer.train(n_epochs=total_timesteps, on_epoch_end=callback)
+    else:
+        trainer.train(total_timesteps, callback)
 
     # Save final artifacts.
     if checkpoint_interval >= 0:
