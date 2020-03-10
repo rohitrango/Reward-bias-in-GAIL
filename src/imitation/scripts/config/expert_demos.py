@@ -179,25 +179,14 @@ def redblue():
                 'cnn_extractor': minigrid_extractor_small,
             }
     normalize=False
+    total_timesteps = int(5e6)
 
-@expert_demos_ex.named_config
-def redblue8x8():
-    env_name = 'MiniGrid-RedBlueDoors-8x8-v0'
-    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
-    init_rl_kwargs['n_steps'] = 2048
-    init_rl_kwargs['policy_class'] = 'CnnPolicy'
-    init_rl_kwargs['policy_kwargs'] = {
-                'cnn_extractor': minigrid_extractor_small,
-            }
-    normalize=False
-    total_timesteps=int(1e7)
-# Debug configs
 
 @expert_demos_ex.named_config
 def lava():
-    env_name = 'MiniGrid-LavaCrossingS9N1-v0'
+    env_name = 'MiniGrid-LavaCrossingS9N0-v0'
     init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
-    init_rl_kwargs['n_steps'] = 2048
+    init_rl_kwargs['n_steps'] = 256
     init_rl_kwargs['policy_class'] = 'CnnPolicy'
     init_rl_kwargs['policy_kwargs'] = {
                 'cnn_extractor': minigrid_extractor,

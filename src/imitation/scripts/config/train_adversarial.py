@@ -15,7 +15,7 @@ train_ex = sacred.Experiment("train_adversarial", interactive=True)
 @train_ex.config
 def train_defaults():
   env_name = "CartPole-v1"  # environment to train on
-  total_timesteps = 1e5  # Num of environment transitions to sample
+  total_timesteps = 1e6  # Num of environment transitions to sample
 
   n_expert_demos = None  # Num demos used. None uses every demo possible
   n_episodes_eval = 50  # Num of episodes for final mean ground truth return
@@ -46,6 +46,7 @@ def train_defaults():
       use_bc = False,
       init_rl_kwargs=dict(policy_class=base.FeedForward32Policy,
                           **DEFAULT_INIT_RL_KWARGS),
+      discrim_kwargs=dict(reward_type='positive'),
   )
 
   log_root = os.path.join('/serverdata/rohit/reward_bias/imitation', "output", "train_adversarial")  # output directory
@@ -57,9 +58,9 @@ def train_defaults():
   # `gen_batch_size` must be a multiple of `init_trainer_kwargs.num_vec`.
   # (If using PPO2, then also must be a multiple of
   # `init_trainer_kwargs.init_rl_kwargs.nminibatch`).
-  disc_batch_size = 2048  # Batch size for discriminator updates.
+  disc_batch_size = 2048*8  # Batch size for discriminator updates.
   disc_minibatch_size = 512  # Num discriminator updates per batch
-  gen_batch_size = 2048  # Batch size for generator updates.
+  gen_batch_size = 2048*8  # Batch size for generator updates.
 
 
 
@@ -211,6 +212,7 @@ def hopper():
   # TODO(adam): upgrade to Hopper-v3?
   env_name = "Hopper-v2"
   rollout_hint = "hopper"
+  total_timesteps = 2e6
 
 
 @train_ex.named_config
@@ -245,6 +247,7 @@ def walker():
   locals().update(**MUJOCO_SHARED_LOCALS)
   env_name = "Walker2d-v2"
   rollout_hint = "walker"
+  total_timesteps = 2e6
 
 
 @train_ex.named_config
@@ -287,6 +290,49 @@ def doorkey():
         reward_type='positive',
     )
     rollout_hint='DoorKeyPPO'
+    normalize=False
+
+@train_ex.named_config
+def redblue():
+    total_timesteps=int(1e7)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-RedBlueDoors-8x8-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='RedBluePPO'
+    normalize=False
+# Debug configs
+
+@train_ex.named_config
+def lava():
+    total_timesteps=int(1e7)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-LavaCrossingS9N0-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='RedBluePPO'
     normalize=False
 
 @train_ex.named_config
