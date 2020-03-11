@@ -295,8 +295,8 @@ def doorkey():
 @train_ex.named_config
 def redblue():
     total_timesteps=int(1e7)
-    gen_batch_size = 2048 * 8
-    env_name = 'MiniGrid-RedBlueDoors-8x8-v0'
+    gen_batch_size = 2048 * 16
+    env_name = 'MiniGrid-RedBlueDoors-6x6-v0'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
             policy_class='CnnPolicy',
@@ -332,7 +332,7 @@ def lava():
             ),
         reward_type='positive',
     )
-    rollout_hint='RedBluePPO'
+    rollout_hint='LavaPPO'
     normalize=False
 
 @train_ex.named_config

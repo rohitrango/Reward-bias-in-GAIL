@@ -88,6 +88,10 @@ def make_vec_env(env_name: str,
     if 'doorkey' in ename:
         keep_classes.extend(['door', 'key'])
 
+    if 'gotodoor' in ename:
+        keep_classes.extend(['door'])
+        drop_color = 0
+
     # for redblue doors
     if 'redblue' in ename:
         keep_classes.extend(['door'])
