@@ -478,7 +478,10 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
         = tf.log_sigmoid(-self._disc_logits_gen_is_high)
     elif self.reward_type == 'wgan':
       self._policy_test_reward = self._policy_train_reward \
-        = self._disc_logits_gen_is_high / self.wgan_clip
+        = -self._disc_logits_gen_is_high / self.wgan_clip
+    elif self.reward_type == 'neutral_b':
+      self._policy_test_reward = self._policy_train_reward \
+        = 2*tf.sigmoid(-self._disc_logits_gen_is_high) - 1
     else:
       raise NotImplementedError
 
@@ -492,5 +495,5 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
     else:
         # gen * 1 + expert * -1 -----> will minimize generator logits
         # reward will be logits_gen_is_high
-        self._disc_loss = (tf.cast(self.labels_gen_is_one_ph, tf.float32)*2 - 1) * self._disc_logits_gen_is_high
+        self._disc_loss = (1 - 2*tf.cast(self.labels_gen_is_one_ph, tf.float32)) * self._disc_logits_gen_is_high
 

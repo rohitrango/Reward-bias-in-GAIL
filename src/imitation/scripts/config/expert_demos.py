@@ -205,6 +205,19 @@ def lava():
     normalize=False
     total_timesteps=int(1e6)
 
+@expert_demos_ex.named_config
+def gotodoor():
+    env_name = 'MiniGrid-GoToDoor-6x6-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(1e6)
+
+
 # Debug configs
 @expert_demos_ex.named_config
 def fast():

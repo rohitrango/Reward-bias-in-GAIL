@@ -10,7 +10,7 @@ total_timesteps=11000000
 ## env: empty
 ############################
 
-for seed in {1,}
+for seed in {2,4}
 do
     # This is for negative reward (No traj and traj)
     python -m imitation.scripts.train_adversarial ${print_config} with ${env} rollout_hint=${rollout_hint} gail seed=${seed} model_name=${model_name}negative negative_reward 2> logs/exp2_${model_name}negative_${seed}.txt &
