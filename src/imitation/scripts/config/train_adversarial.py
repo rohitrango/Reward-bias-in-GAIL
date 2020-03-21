@@ -336,6 +336,48 @@ def gotodoor():
     env_name = 'MiniGrid-GoToDoor-6x6-v0'
 
 @train_ex.named_config
+def lavagap():
+    total_timesteps=int(1e7)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-LavaGapS7-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='LavaGapPPO'
+    normalize=False
+
+@train_ex.named_config
+def lavagap6():
+    total_timesteps=int(5e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-LavaGapS6-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='LavaGapPPO'
+    normalize=False
+
+@train_ex.named_config
 def lava():
     total_timesteps=int(1e7)
     gen_batch_size = 2048 * 8
@@ -361,6 +403,23 @@ def negative_reward():
     init_trainer_kwargs = {
         'discrim_kwargs': {
             'reward_type': 'negative'
+        }
+    }
+
+@train_ex.named_config
+def neutral():
+    init_trainer_kwargs = {
+        'discrim_kwargs': {
+            'reward_type': 'neutral'
+        }
+    }
+
+@train_ex.named_config
+def neutral_w():
+    init_trainer_kwargs = {
+        'discrim_kwargs': {
+            'reward_type': 'neutral_w',
+            'wgan_clip': 0.8,
         }
     }
 

@@ -4,7 +4,7 @@ model_name=$3
 print_config=''
 
 if [ $# -ne 3 ]; then
-    echo 'experiment2.sh env rollout modelname'
+    echo 'experiment2.sh empty EmptyPPO EmptyGAIL'
     exit
 fi
 

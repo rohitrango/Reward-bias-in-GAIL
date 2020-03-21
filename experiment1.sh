@@ -19,5 +19,5 @@ do
     # This is for BC
     python -m imitation.scripts.train_adversarial ${print_config} with ${env} rollout_hint=${rollout_hint} gail seed=${seed} model_name=${model_name}bc bc 2> logs/exp1_${model_name}bc_${seed}.txt &
     # This is for positive reward
-    python -m imitation.scripts.train_adversarial ${print_config} with ${env} rollout_hint=${rollout_hint} gail seed=${seed} model_name=${model_name}positive total_timesteps=1100000 2> logs/exp1_${model_name}positive_${seed}.txt
+    python -m imitation.scripts.train_adversarial ${print_config} with ${env} rollout_hint=${rollout_hint} gail seed=${seed} model_name=${model_name}positive 2> logs/exp1_${model_name}positive_${seed}.txt
 done

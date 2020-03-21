@@ -130,6 +130,19 @@ def walker():
 
 
 # Custom env configs
+@expert_demos_ex.named_config
+def fetchreach():
+    env_name = 'FetchReach-v1'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    total_timesteps=int(5e5)
+
+@expert_demos_ex.named_config
+def fetchpush():
+    env_name = 'FetchPush-v1'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    total_timesteps=int(5e5)
 
 @expert_demos_ex.named_config
 def custom_ant():
@@ -192,6 +205,30 @@ def redblue8x8():
     normalize=False
     total_timesteps=int(1e7)
 # Debug configs
+
+@expert_demos_ex.named_config
+def lavagap6():
+    env_name = 'MiniGrid-LavaGapS6-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(5e5)
+
+@expert_demos_ex.named_config
+def lavagap():
+    env_name = 'MiniGrid-LavaGapS7-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(1e6)
 
 @expert_demos_ex.named_config
 def lava():

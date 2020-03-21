@@ -58,6 +58,7 @@ def make_vec_env(env_name: str,
   # Resolve the spec outside of the subprocess first, so that it is available to
   # subprocesses running `make_env` via automatic pickling.
   spec = gym.spec(env_name)
+  isfetch = env_name.startswith('Fetch')
 
   def make_env(i, this_seed):
     # Previously, we directly called `gym.make(env_name)`, but running
@@ -68,7 +69,10 @@ def make_vec_env(env_name: str,
     # registering the custom environment in the scope of `make_vec_env` didn't
     # work. For more discussion and hypotheses on this issue see PR #160:
     # https://github.com/HumanCompatibleAI/imitation/pull/160.
-    env = spec.make()
+    if isfetch:
+        env = spec.make(reward_type='dense')
+    else:
+        env = spec.make()
 
     # Seed each environment with a different, non-sequential seed for diversity
     # (even if caller is passing us sequentially-assigned base seeds). int() is
@@ -106,6 +110,11 @@ def make_vec_env(env_name: str,
       env = mgwr.ImgObsWrapper(env)
       env = mgwr.FullyObsOneHotWrapper(env, drop_color=drop_color, keep_classes=keep_classes, flatten=False)
 
+    # Use wrappers for Gym Fetch envs
+    if env_name.startswith('Fetch'):
+        env = gym.wrappers.FilterObservation(env, filter_keys=['observation', 'desired_goal'])
+        env = gym.wrappers.FlattenObservation(env)
+
     # Use Monitor to record statistics needed for Baselines algorithms logging
     # Optionally, save to disk
     log_path = None
@@ -113,7 +122,10 @@ def make_vec_env(env_name: str,
       log_subdir = os.path.join(log_dir, 'monitor')
       os.makedirs(log_subdir, exist_ok=True)
       log_path = os.path.join(log_subdir, f'{i:03d}')
-    return MonitorPlus(env, log_path, allow_early_resets=True)
+    info_keywords=()
+    if isfetch:
+        info_keywords = ('is_success', )
+    return MonitorPlus(env, log_path, allow_early_resets=True, info_keywords=info_keywords)
   rng = np.random.RandomState(seed)
   env_seeds = rng.randint(0, (1 << 31) - 1, (n_envs, ))
   env_fns = [functools.partial(make_env, i, s)
