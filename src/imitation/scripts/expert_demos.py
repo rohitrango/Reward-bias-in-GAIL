@@ -45,6 +45,8 @@ def rollouts_and_policy(
   policy_save_interval: int,
   policy_save_final: bool,
 
+  dac: bool,
+
   init_tensorboard: bool,
 ) -> dict:
   """Trains an expert policy from scratch and saves the rollouts and policy.
@@ -126,7 +128,7 @@ def rollouts_and_policy(
       sb_tensorboard_dir = osp.join(log_dir, "sb_tb")
       init_rl_kwargs["tensorboard_log"] = sb_tensorboard_dir
 
-    venv = util.make_vec_env(env_name, num_vec, seed=_seed,
+    venv = util.make_vec_env(env_name, num_vec, seed=_seed, dac=dac,
                              parallel=parallel, log_dir=log_dir,
                              max_episode_steps=max_episode_steps)
 
@@ -199,6 +201,7 @@ def rollouts_from_policy(
   parallel: bool,
   rollout_save_path: str,
   max_episode_steps: Optional[int],
+  dac: bool,
 ) -> None:
   """Loads a saved policy and generates rollouts.
 
@@ -217,7 +220,7 @@ def rollouts_from_policy(
 
   venv = util.make_vec_env(env_name, num_vec, seed=_seed,
                            parallel=parallel, log_dir=log_dir,
-                           max_episode_steps=max_episode_steps)
+                           max_episode_steps=max_episode_steps, dac=dac)
 
   with serialize.load_policy(policy_type, policy_path, venv) as policy:
     print(policy)

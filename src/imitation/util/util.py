@@ -39,7 +39,8 @@ def make_vec_env(env_name: str,
                  seed: int = 0,
                  parallel: bool = False,
                  log_dir: Optional[str] = None,
-                 max_episode_steps: Optional[int] = None) -> VecEnv:
+                 max_episode_steps: Optional[int] = None,
+                 dac: Optional[bool] = False) -> VecEnv:
   """Returns a VecEnv initialized with `n_envs` Envs.
 
   Args:
@@ -89,6 +90,7 @@ def make_vec_env(env_name: str,
     drop_color = 1
     ename = env_name.lower()
     # for doorkey env
+    flatten = False
     if 'doorkey' in ename:
         keep_classes.extend(['door', 'key'])
 
@@ -101,18 +103,25 @@ def make_vec_env(env_name: str,
         keep_classes.extend(['door'])
         drop_color = 0
 
-    if 'lava' in ename:
+    if 'lava' in ename or 'distshift' in ename:
         keep_classes.extend(['lava'])
+        drop_color = 1
+
+    # empty v1
+    if 'empty' in ename and int(ename[-1]) > 0:
+        keep_classes.append('lava')
         drop_color = 1
 
     if env_name.startswith('MiniGrid'):
       env = mgwr.FullyObsWrapper(env)
       env = mgwr.ImgObsWrapper(env)
-      env = mgwr.FullyObsOneHotWrapper(env, drop_color=drop_color, keep_classes=keep_classes, flatten=False)
+      env = mgwr.FullyObsOneHotWrapper(env, drop_color=drop_color, keep_classes=keep_classes, flatten=flatten)
+      if dac:
+          env = mgwr.DACWrapper(env)
 
     # Use wrappers for Gym Fetch envs
     if env_name.startswith('Fetch'):
-        env = gym.wrappers.FilterObservation(env, filter_keys=['observation', 'desired_goal'])
+        #env = gym.wrappers.FilterObservation(env, filter_keys=['observation', 'desired_goal'])
         env = gym.wrappers.FlattenObservation(env)
 
     # Use Monitor to record statistics needed for Baselines algorithms logging

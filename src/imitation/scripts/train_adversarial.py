@@ -50,6 +50,7 @@ def train(_run,
           n_episodes_eval: int,
           init_tensorboard: bool,
           checkpoint_interval: int,
+          dac: bool,
           ) -> dict:
   """Train an adversarial-network-based imitation learning algorithm.
 
@@ -137,7 +138,7 @@ def train(_run,
       kwargs["init_rl_kwargs"]["tensorboard_log"] = sb_tensorboard_dir
 
     trainer = init_trainer(env_name, expert_trajs,
-                           seed=_seed, log_dir=log_dir,
+                           seed=_seed, log_dir=log_dir, dac=dac,
                            normalize=normalize, normalize_kwargs=normalize_kwargs,
                            **init_trainer_kwargs)
 

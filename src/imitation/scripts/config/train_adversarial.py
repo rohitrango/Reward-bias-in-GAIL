@@ -25,6 +25,7 @@ def train_defaults():
 
   normalize = True  # Use VecNormalize
   normalize_kwargs = dict()  # kwargs for `VecNormalize`
+  dac = False
 
   # Number of epochs in between plots (<0 disables) (=0 means final plot only)
   plot_interval = -1
@@ -62,7 +63,15 @@ def train_defaults():
   disc_minibatch_size = 512  # Num discriminator updates per batch
   gen_batch_size = 2048*8  # Batch size for generator updates.
 
+@train_ex.named_config
+def noptepochs4():
+  init_trainer_kwargs = dict(
+      init_rl_kwargs=dict(noptepochs=4),
+  )
 
+@train_ex.named_config
+def dac():
+  dac=True
 
 @train_ex.config
 def aliases_default_gen_batch_size(gen_batch_size):
@@ -153,9 +162,9 @@ ANT_SHARED_LOCALS = dict(
   total_timesteps=3e7,
   gen_batch_size=2048*8,
   disc_batch_size=2048*8,
-  init_trainer_kwargs=dict(
-    max_episode_steps=500,  # To match `inverse_rl` settings.
-  ),
+  #init_trainer_kwargs=dict(
+    #max_episode_steps=500,  # To match `inverse_rl` settings.
+  #),
 )
 
 
@@ -197,6 +206,10 @@ def ant():
   env_name = "Ant-v2"
   rollout_hint = "ant"
 
+@train_ex.named_config
+def fetchreach():
+    env_name = 'FetchReach-v1'
+    total_timesteps=int(5e5)
 
 @train_ex.named_config
 def half_cheetah():
@@ -249,6 +262,47 @@ def walker():
   rollout_hint = "walker"
   total_timesteps = 2e6
 
+@train_ex.named_config
+def emptyv1():
+    total_timesteps = int(1e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-Empty-6x6-v1'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='EmptyPPO'
+    normalize=False
+
+@train_ex.named_config
+def emptyv2():
+    total_timesteps = int(1e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-Empty-6x6-v2'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='EmptyPPO'
+    normalize=False
 
 @train_ex.named_config
 def empty():
@@ -357,6 +411,69 @@ def lavagap():
     normalize=False
 
 @train_ex.named_config
+def distshift():
+    total_timesteps=int(1e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-DistShift1-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='PPO'
+    normalize=False
+
+@train_ex.named_config
+def distshiftv1():
+    total_timesteps=int(1e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-DistShift1-v1'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='PPO'
+    normalize=False
+
+@train_ex.named_config
+def lavagapv1():
+    total_timesteps=int(5e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-LavaGapS6-v1'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='LavaGapPPO'
+    normalize=False
+
+@train_ex.named_config
 def lavagap6():
     total_timesteps=int(5e6)
     gen_batch_size = 2048 * 8
@@ -376,6 +493,29 @@ def lavagap6():
     )
     rollout_hint='LavaGapPPO'
     normalize=False
+
+
+@train_ex.named_config
+def normalgap():
+    total_timesteps=int(5e6)
+    gen_batch_size = 2048 * 8
+    env_name = 'MiniGrid-NormalGapS6-v0'
+    init_trainer_kwargs = dict()
+    init_trainer_kwargs['init_rl_kwargs'] = dict(
+            policy_class='CnnPolicy',
+            policy_kwargs={
+                'cnn_extractor': minigrid_extractor_small,
+        }, **DEFAULT_INIT_RL_KWARGS)
+    # Get discrim kwargs
+    init_trainer_kwargs['discrim_kwargs'] = dict(
+        build_discrim_net_kwargs = dict(
+                cnn_extractor= minigrid_extractor_small,
+            ),
+        reward_type='positive',
+    )
+    rollout_hint='NormalGapPPO'
+    normalize=False
+
 
 @train_ex.named_config
 def lava():

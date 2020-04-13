@@ -426,6 +426,7 @@ def init_trainer(env_name: str,
                  normalize: bool = False,
                  normalize_kwargs: dict = {},
                  max_episode_steps: Optional[int] = None,
+                 dac: bool = False,
                  scale: bool = True,
                  airl_entropy_weight: float = 1.0,
                  discrim_kwargs: dict = {},
@@ -460,7 +461,7 @@ def init_trainer(env_name: str,
         used to initialize the RL algorithm.
   """
   util.logger.configure(folder=log_dir, format_strs=['tensorboard', 'stdout'])
-  env = util.make_vec_env(env_name, num_vec, seed=seed, parallel=parallel,
+  env = util.make_vec_env(env_name, num_vec, seed=seed, parallel=parallel, dac=dac,
                           log_dir=log_dir, max_episode_steps=max_episode_steps)
   gen_policy = util.init_rl(env, verbose=1, **init_rl_kwargs)
 

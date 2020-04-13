@@ -20,6 +20,7 @@ def expert_demos_defaults():
   normalize_kwargs = dict()  # kwargs for `VecNormalize`
   max_episode_steps = None  # Set to positive int to limit episode horizons
   n_episodes_eval = 50  # Num of episodes for final ep reward mean evaluation
+  dac=False
   model_name = None
   assert model_name is not None
 
@@ -70,6 +71,9 @@ def rollouts_from_policy_only_defaults(log_dir):
 def acrobot():
   env_name = "Acrobot-v1"
 
+@expert_demos_ex.named_config
+def dac():
+    dac = True
 
 @expert_demos_ex.named_config
 def ant():
@@ -163,6 +167,28 @@ def two_d_maze():
 
 ###### Configs for MiniGrid
 @expert_demos_ex.named_config
+def emptyv1():
+    env_name = 'MiniGrid-Empty-6x6-v1'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(1e5)
+
+@expert_demos_ex.named_config
+def emptyv2():
+    env_name = 'MiniGrid-Empty-6x6-v2'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(1e5)
+
+@expert_demos_ex.named_config
 def empty():
     env_name = 'MiniGrid-Empty-Random-6x6-v0'
     init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
@@ -219,6 +245,42 @@ def lavagap6():
     total_timesteps=int(5e5)
 
 @expert_demos_ex.named_config
+def distshift():
+    env_name = 'MiniGrid-DistShift1-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(2e5)
+
+@expert_demos_ex.named_config
+def distshiftv1():
+    env_name = 'MiniGrid-DistShift1-v1'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(2e5)
+
+@expert_demos_ex.named_config
+def lavagapv1():
+    env_name = 'MiniGrid-LavaGapS6-v1'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(3e5)
+
+@expert_demos_ex.named_config
 def lavagap():
     env_name = 'MiniGrid-LavaGapS7-v0'
     init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
@@ -229,6 +291,18 @@ def lavagap():
             }
     normalize=False
     total_timesteps=int(1e6)
+
+@expert_demos_ex.named_config
+def normalgap():
+    env_name = 'MiniGrid-NormalGapS6-v0'
+    init_rl_kwargs = dict(DEFAULT_INIT_RL_KWARGS)
+    init_rl_kwargs['n_steps'] = 256
+    init_rl_kwargs['policy_class'] = 'CnnPolicy'
+    init_rl_kwargs['policy_kwargs'] = {
+                'cnn_extractor': minigrid_extractor_small,
+            }
+    normalize=False
+    total_timesteps=int(3e5)
 
 @expert_demos_ex.named_config
 def lava():
@@ -270,5 +344,5 @@ ant_shared_locals = dict(
         n_steps=2048,  # batch size of 2048*8=16384 due to num_vec
     ),
     total_timesteps=int(5e6),
-    max_episode_steps=500,  # To match `inverse_rl` settings.
+    #max_episode_steps=500,  # To match `inverse_rl` settings.
 )
