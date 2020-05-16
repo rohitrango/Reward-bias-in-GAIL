@@ -12,150 +12,166 @@ from stable_baselines.common.policies import minigrid_extractor_small, minigrid_
 
 train_ex = sacred.Experiment("train_adversarial", interactive=True)
 
+
 @train_ex.config
 def train_defaults():
-  env_name = "CartPole-v1"  # environment to train on
-  total_timesteps = 1e6  # Num of environment transitions to sample
+    print("inside train defaults...")
+    env_name = "CartPole-v1"  # environment to train on
+    total_timesteps = 1e6  # Num of environment transitions to sample
 
-  n_expert_demos = None  # Num demos used. None uses every demo possible
-  n_episodes_eval = 50  # Num of episodes for final mean ground truth return
-  airl_entropy_weight = 1.0
-  model_name = None
-  assert model_name is not None
+    n_expert_demos = None  # Num demos used. None uses every demo possible
+    n_episodes_eval = 50  # Num of episodes for final mean ground truth return
+    airl_entropy_weight = 1.0
+    model_name = None
+    assert model_name is not None
 
-  normalize = True  # Use VecNormalize
-  normalize_kwargs = dict()  # kwargs for `VecNormalize`
+    normalize = True  # Use VecNormalize
+    normalize_kwargs = dict()  # kwargs for `VecNormalize`
 
-  # Number of epochs in between plots (<0 disables) (=0 means final plot only)
-  plot_interval = -1
-  n_plot_episodes = 5  # Number of rollouts for each mean_ep_rew data
-  # Interval for extra episode rew data. (<=0 disables)
-  extra_episode_data_interval = -1
-  show_plots = True  # Show plots in addition to saving them
+    # Number of epochs in between plots (<0 disables) (=0 means final plot only)
+    plot_interval = -1
+    n_plot_episodes = 5  # Number of rollouts for each mean_ep_rew data
+    # Interval for extra episode rew data. (<=0 disables)
+    extra_episode_data_interval = -1
+    show_plots = True  # Show plots in addition to saving them
 
+    init_trainer_kwargs = dict(
+        num_vec=8,  # Must evenly divide gen_batch_size
+        parallel=True,  # Use SubprocVecEnv (generally faster if num_vec>1)
+        max_episode_steps=None,  # Set to positive int to limit episode horizons
+        scale=True,
+        reward_kwargs=dict(
+            theta_units=[32, 32],
+            phi_units=[32, 32],
+        ),
+        use_bc=False,
+        init_rl_kwargs=dict(policy_class=base.FeedForward32Policy,
+                            **DEFAULT_INIT_RL_KWARGS),
+        discrim_kwargs=dict(reward_type='positive')
+        # use_terminal_states_disc=False
+    )
 
-  init_trainer_kwargs = dict(
-      num_vec=8,  # Must evenly divide gen_batch_size
-      parallel=True,  # Use SubprocVecEnv (generally faster if num_vec>1)
-      max_episode_steps=None,  # Set to positive int to limit episode horizons
-      scale=True,
-      reward_kwargs=dict(
-          theta_units=[32, 32],
-          phi_units=[32, 32],
-      ),
-      use_bc = False,
-      init_rl_kwargs=dict(policy_class=base.FeedForward32Policy,
-                          **DEFAULT_INIT_RL_KWARGS),
-      discrim_kwargs=dict(reward_type='positive'),
-  )
+    print("default kwargs: ", DEFAULT_INIT_RL_KWARGS)
+    log_root = os.path.join('/serverdata/sid/reward_bias/imitation', "output",
+                            "train_adversarial")  # output directory
+    checkpoint_interval = 0  # num epochs between checkpoints (<0 disables)
+    init_tensorboard = True  # If True, then write Tensorboard logs.
+    rollout_hint = None  # Used to generate default rollout_path
+    data_dir = "data/"  # Default data directory
 
-  log_root = os.path.join('/serverdata/rohit/reward_bias/imitation', "output", "train_adversarial")  # output directory
-  checkpoint_interval = 0  # num epochs between checkpoints (<0 disables)
-  init_tensorboard = False  # If True, then write Tensorboard logs.
-  rollout_hint = None  # Used to generate default rollout_path
-  data_dir = "data/"  # Default data directory
+    # `gen_batch_size` must be a multiple of `init_trainer_kwargs.num_vec`.
+    # (If using PPO2, then also must be a multiple of
+    # `init_trainer_kwargs.init_rl_kwargs.nminibatch`).
+    disc_batch_size = 2048 * 8  # Batch size for discriminator updates.
+    disc_minibatch_size = 512  # Num discriminator updates per batch
+    gen_batch_size = 2048 * 8  # Batch size for generator updates.
 
-  # `gen_batch_size` must be a multiple of `init_trainer_kwargs.num_vec`.
-  # (If using PPO2, then also must be a multiple of
-  # `init_trainer_kwargs.init_rl_kwargs.nminibatch`).
-  disc_batch_size = 2048*8  # Batch size for discriminator updates.
-  disc_minibatch_size = 512  # Num discriminator updates per batch
-  gen_batch_size = 2048*8  # Batch size for generator updates.
-
+    # use_terminal_state_disc = False  # whether to use a discriminator for terminal states.
+    print("train default completed..")
 
 
 @train_ex.config
 def aliases_default_gen_batch_size(gen_batch_size):
-  # Setting generator buffer capacity and discriminator batch size to
-  # the same number is equivalent to not using a replay buffer at all.
-  # "Disabling" the replay buffer seems to improve convergence speed, but may
-  # come at a cost of stability.
-  gen_replay_buffer_size = gen_batch_size  # Num generator transitions stored
+    # Setting generator buffer capacity and discriminator batch size to
+    # the same number is equivalent to not using a replay buffer at all.
+    # "Disabling" the replay buffer seems to improve convergence speed, but may
+    # come at a cost of stability.
+    gen_replay_buffer_size = gen_batch_size  # Num generator transitions stored
 
 
 @train_ex.config
 def apply_init_trainer_kwargs_aliases(disc_minibatch_size,
                                       disc_batch_size,
                                       gen_replay_buffer_size):
-  init_trainer_kwargs = dict(
-    trainer_kwargs=dict(
-      disc_minibatch_size=disc_minibatch_size,
-      gen_replay_buffer_capacity=gen_replay_buffer_size,
-      disc_batch_size=disc_batch_size,
-    ))
+    init_trainer_kwargs = dict(
+        trainer_kwargs=dict(
+            disc_minibatch_size=disc_minibatch_size,
+            gen_replay_buffer_capacity=gen_replay_buffer_size,
+            disc_batch_size=disc_batch_size,
+        ))
 
 
 @train_ex.config
 def calc_n_steps(init_trainer_kwargs, gen_batch_size):
-  _num_vec = init_trainer_kwargs["num_vec"]
-  assert gen_batch_size % _num_vec == 0, ("num_vec must evenly divide "
-                                          "gen_batch_size")
-  init_trainer_kwargs["init_rl_kwargs"]["n_steps"] = gen_batch_size // _num_vec
-  del _num_vec
+    _num_vec = init_trainer_kwargs["num_vec"]
+    assert gen_batch_size % _num_vec == 0, ("num_vec must evenly divide "
+                                            "gen_batch_size")
+    init_trainer_kwargs["init_rl_kwargs"]["n_steps"] = gen_batch_size // _num_vec
+    del _num_vec
 
 
 @train_ex.config
 def paths(env_name, model_name, log_root, rollout_hint, data_dir, seed):
-  log_dir = os.path.join(log_root, env_name.replace('/', '_'), model_name, str(seed))
+    log_dir = os.path.join(log_root, env_name.replace('/', '_'), model_name, str(seed))
 
-  # Recommended that user sets rollout_path manually.
-  # By default we guess the named config associated with `env_name`
-  # and attempt to load rollouts from `data/expert_models/`.
-  _d_root = os.path.join('/serverdata/rohit/reward_bias/imitation', "output", "expert_demos")  # output directory
-  if rollout_hint is None:
-    rollout_hint = env_name.split("-")[0].lower()
-  rollout_path = os.path.join(_d_root,
-                              env_name,
-                              f"{rollout_hint}",
-                              "rollouts", "final.pkl")
-  assert os.path.exists(rollout_path), rollout_path
+    # Recommended that user sets rollout_path manually.
+    # By default we guess the named config associated with `env_name`
+    # and attempt to load rollouts from `data/expert_models/`.
+    _d_root = os.path.join('/serverdata/sid/reward_bias/imitation', "output", "expert_demos")  # output directory
+    if rollout_hint is None:
+        rollout_hint = env_name.split("-")[0].lower()
+    rollout_path = os.path.join(_d_root,
+                                env_name,
+                                f"{rollout_hint}",
+                                "rollouts", "final.pkl")
+    assert os.path.exists(rollout_path), rollout_path
 
 
 # Training algorithm named configs
 
 @train_ex.named_config
 def gail():
-  init_trainer_kwargs = dict(
-      use_gail=True,
-  )
+    init_trainer_kwargs = dict(
+        use_gail=True,
+    )
+
+
+@train_ex.named_config
+def use_terminal_state_disc():
+    print("inside terminal config")
+    init_trainer_kwargs = dict(
+        use_terminal_state_disc=True,
+    )
+
 
 @train_ex.named_config
 def bc():
     init_trainer_kwargs = dict(use_bc=True)
     total_timesteps = 100
 
+
 @train_ex.named_config
 def notraj():
     init_trainer_kwargs = dict(
-            trainer_kwargs=dict(
-                disc_opt_kwargs=dict(
-                        learning_rate=0,
+        trainer_kwargs=dict(
+            disc_opt_kwargs=dict(
+                learning_rate=0,
             )
         ))
 
 
 @train_ex.named_config
 def airl():
-  init_trainer_kwargs = dict(
-      use_gail=False,
-  )
+    init_trainer_kwargs = dict(
+        use_gail=False,
+    )
 
 
 # Shared settings
 
 MUJOCO_SHARED_LOCALS = dict(
-  init_trainer_kwargs=dict(
-    airl_entropy_weight=0.1,
-  ),
+    init_trainer_kwargs=dict(
+        airl_entropy_weight=0.1,
+    ),
 )
 
 ANT_SHARED_LOCALS = dict(
-  total_timesteps=3e7,
-  gen_batch_size=2048*8,
-  disc_batch_size=2048*8,
-  init_trainer_kwargs=dict(
-    max_episode_steps=500,  # To match `inverse_rl` settings.
-  ),
+    total_timesteps=3e7,
+    gen_batch_size=2048 * 8,
+    disc_batch_size=2048 * 8,
+    init_trainer_kwargs=dict(
+        max_episode_steps=500,  # To match `inverse_rl` settings.
+    ),
 )
 
 
@@ -163,91 +179,91 @@ ANT_SHARED_LOCALS = dict(
 
 @train_ex.named_config
 def acrobot():
-  env_name = "Acrobot-v1"
-  rollout_hint = "acrobot"
+    env_name = "Acrobot-v1"
+    rollout_hint = "acrobot"
 
 
 @train_ex.named_config
 def cartpole():
-  env_name = "CartPole-v1"
-  rollout_hint = "cartpole"
-  init_trainer_kwargs = dict(
-      scale=False,
-  )
+    env_name = "CartPole-v1"
+    rollout_hint = "cartpole"
+    init_trainer_kwargs = dict(
+        scale=False,
+    )
 
 
 @train_ex.named_config
 def mountain_car():
-  env_name = "MountainCar-v0"
-  rollout_hint = "mountain_car"
+    env_name = "MountainCar-v0"
+    rollout_hint = "mountain_car"
 
 
 @train_ex.named_config
 def pendulum():
-  env_name = "Pendulum-v0"
-  rollout_hint = "pendulum"
+    env_name = "Pendulum-v0"
+    rollout_hint = "pendulum"
 
 
 # Standard MuJoCo Gym environment named configs
 
 @train_ex.named_config
 def ant():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  locals().update(**ANT_SHARED_LOCALS)
-  env_name = "Ant-v2"
-  rollout_hint = "ant"
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    locals().update(**ANT_SHARED_LOCALS)
+    env_name = "Ant-v2"
+    rollout_hint = "ant"
 
 
 @train_ex.named_config
 def half_cheetah():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  env_name = "HalfCheetah-v2"
-  rollout_hint = "half_cheetah"
-  total_timesteps = 2e6
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    env_name = "HalfCheetah-v2"
+    rollout_hint = "half_cheetah"
+    total_timesteps = 2e6
 
 
 @train_ex.named_config
 def hopper():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  # TODO(adam): upgrade to Hopper-v3?
-  env_name = "Hopper-v2"
-  rollout_hint = "hopper"
-  total_timesteps = 2e6
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    # TODO(adam): upgrade to Hopper-v3?
+    env_name = "Hopper-v2"
+    rollout_hint = "hopper"
+    total_timesteps = 2e6
 
 
 @train_ex.named_config
 def humanoid():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  env_name = "Humanoid-v2"
-  rollout_hint = "humanoid"
-  total_timesteps = 4e6
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    env_name = "Humanoid-v2"
+    rollout_hint = "humanoid"
+    total_timesteps = 4e6
 
 
 @train_ex.named_config
 def reacher():
-  env_name = "Reacher-v2"
-  rollout_hint = "reacher"
+    env_name = "Reacher-v2"
+    rollout_hint = "reacher"
 
 
 @train_ex.named_config
 def swimmer():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  env_name = "Swimmer-v2"
-  rollout_hint = "swimmer"
-  total_timesteps = 2e6
-  init_trainer_kwargs = dict(
-      init_rl_kwargs=dict(
-          policy_network_class=policies.MlpPolicy,
-      ),
-  )
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    env_name = "Swimmer-v2"
+    rollout_hint = "swimmer"
+    total_timesteps = 2e6
+    init_trainer_kwargs = dict(
+        init_rl_kwargs=dict(
+            policy_network_class=policies.MlpPolicy,
+        ),
+    )
 
 
 @train_ex.named_config
 def walker():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  env_name = "Walker2d-v2"
-  rollout_hint = "walker"
-  total_timesteps = 2e6
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    env_name = "Walker2d-v2"
+    rollout_hint = "walker"
+    total_timesteps = 2e6
 
 
 @train_ex.named_config
@@ -257,19 +273,20 @@ def empty():
     env_name = 'MiniGrid-Empty-Random-6x6-v0'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
-            policy_class='CnnPolicy',
-            policy_kwargs={
-                'cnn_extractor': minigrid_extractor_small,
+        policy_class='CnnPolicy',
+        policy_kwargs={
+            'cnn_extractor': minigrid_extractor_small,
         }, **DEFAULT_INIT_RL_KWARGS)
     # Get discrim kwargs
     init_trainer_kwargs['discrim_kwargs'] = dict(
-        build_discrim_net_kwargs = dict(
-                cnn_extractor= minigrid_extractor_small,
-            ),
+        build_discrim_net_kwargs=dict(
+            cnn_extractor=minigrid_extractor_small,
+        ),
         reward_type='positive',
     )
-    rollout_hint='EmptyPPO'
-    normalize=False
+    rollout_hint = 'EmptyPPO'
+    normalize = False
+
 
 @train_ex.named_config
 def doorkey():
@@ -278,62 +295,66 @@ def doorkey():
     env_name = 'MiniGrid-DoorKey-6x6-v0'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
-            policy_class='CnnPolicy',
-            policy_kwargs={
-                'cnn_extractor': minigrid_extractor_small,
+        policy_class='CnnPolicy',
+        policy_kwargs={
+            'cnn_extractor': minigrid_extractor_small,
         }, **DEFAULT_INIT_RL_KWARGS)
     # Get discrim kwargs
     init_trainer_kwargs['discrim_kwargs'] = dict(
-        build_discrim_net_kwargs = dict(
-                cnn_extractor= minigrid_extractor_small,
-            ),
+        build_discrim_net_kwargs=dict(
+            cnn_extractor=minigrid_extractor_small,
+        ),
         reward_type='positive',
     )
-    rollout_hint='DoorKeyPPO'
-    normalize=False
+    rollout_hint = 'DoorKeyPPO'
+    normalize = False
+
 
 @train_ex.named_config
 def redblue():
-    total_timesteps=int(1e7)
+    total_timesteps = int(1e7)
     gen_batch_size = 2048 * 16
     env_name = 'MiniGrid-RedBlueDoors-6x6-v0'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
-            policy_class='CnnPolicy',
-            policy_kwargs={
-                'cnn_extractor': minigrid_extractor_small,
+        policy_class='CnnPolicy',
+        policy_kwargs={
+            'cnn_extractor': minigrid_extractor_small,
         }, **DEFAULT_INIT_RL_KWARGS)
     # Get discrim kwargs
     init_trainer_kwargs['discrim_kwargs'] = dict(
-        build_discrim_net_kwargs = dict(
-                cnn_extractor= minigrid_extractor_small,
-            ),
+        build_discrim_net_kwargs=dict(
+            cnn_extractor=minigrid_extractor_small,
+        ),
         reward_type='positive',
     )
-    rollout_hint='RedBluePPO'
-    normalize=False
+    rollout_hint = 'RedBluePPO'
+    normalize = False
+
+
 # Debug configs
 
 @train_ex.named_config
 def lava():
-    total_timesteps=int(1e7)
+    total_timesteps = int(1e7)
     gen_batch_size = 2048 * 8
     env_name = 'MiniGrid-LavaCrossingS9N0-v0'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
-            policy_class='CnnPolicy',
-            policy_kwargs={
-                'cnn_extractor': minigrid_extractor,
+        policy_class='CnnPolicy',
+        policy_kwargs={
+            'cnn_extractor': minigrid_extractor,
         }, **DEFAULT_INIT_RL_KWARGS)
     # Get discrim kwargs
     init_trainer_kwargs['discrim_kwargs'] = dict(
-        build_discrim_net_kwargs = dict(
-                cnn_extractor= minigrid_extractor,
-            ),
+        build_discrim_net_kwargs=dict(
+            cnn_extractor=minigrid_extractor,
+        ),
         reward_type='positive',
     )
-    rollout_hint='LavaPPO'
-    normalize=False
+    rollout_hint = 'LavaPPO'
+    normalize = False
+
 
 @train_ex.named_config
 def negative_reward():
@@ -343,56 +364,60 @@ def negative_reward():
         }
     }
 
+
 @train_ex.named_config
 def wgan():
     init_trainer_kwargs = {
         'discrim_kwargs': {
             'reward_type': 'wgan',
-            'wgan_clip'  : 0.01,
+            'wgan_clip': 0.01,
         }
     }
+
 
 # Custom Gym environment named configs
 
 @train_ex.named_config
 def two_d_maze():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  env_name = "imitation/TwoDMaze-v0"
-  rollout_hint = "two_d_maze"
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    env_name = "imitation/TwoDMaze-v0"
+    rollout_hint = "two_d_maze"
 
 
 @train_ex.named_config
 def custom_ant():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  locals().update(**ANT_SHARED_LOCALS)
-  env_name = "imitation/CustomAnt-v0"
-  rollout_hint = "custom_ant"
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    locals().update(**ANT_SHARED_LOCALS)
+    env_name = "imitation/CustomAnt-v0"
+    rollout_hint = "custom_ant"
 
 
 @train_ex.named_config
 def disabled_ant():
-  locals().update(**MUJOCO_SHARED_LOCALS)
-  locals().update(**ANT_SHARED_LOCALS)
-  env_name = "imitation/DisabledAnt-v0"
-  rollout_hint = "disabled_ant"
+    locals().update(**MUJOCO_SHARED_LOCALS)
+    locals().update(**ANT_SHARED_LOCALS)
+    env_name = "imitation/DisabledAnt-v0"
+    rollout_hint = "disabled_ant"
 
 
 # Debug configs
 
 @train_ex.named_config
 def fast():
-  """Minimize the amount of computation. Useful for test cases."""
-  total_timesteps = 10
-  n_expert_demos = 1
-  n_episodes_eval = 1
-  gen_batch_size = 2
-  disc_batch_size = 2
-  disc_minibatch_size = 2
-  show_plots = False
-  n_plot_episodes = 1
-  init_trainer_kwargs = dict(
-    parallel=False,  # easier to debug with everything in one process
-    max_episode_steps=1e2,
-    num_vec=2,
-    init_rl_kwargs=dict(nminibatches=1),
-  )
+    """Minimize the amount of computation. Useful for test cases."""
+    total_timesteps = 10
+    n_expert_demos = 1
+    n_episodes_eval = 1
+    gen_batch_size = 2
+    disc_batch_size = 2
+    disc_minibatch_size = 2
+    show_plots = False
+    n_plot_episodes = 1
+    init_trainer_kwargs = dict(
+        parallel=False,  # easier to debug with everything in one process
+        max_episode_steps=1e2,
+        num_vec=2,
+        init_rl_kwargs=dict(nminibatches=1),
+    )
+
+print("all done")

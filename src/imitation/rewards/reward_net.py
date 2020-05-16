@@ -10,7 +10,7 @@ from imitation.util import serialize, util
 
 
 class RewardNet(serialize.Serializable, ABC):
-  """Abstract reward network.
+    """Abstract reward network.
 
   This class assumes that the caller will set the default TensorFlow Session
   and initialize the network's variables.
@@ -27,9 +27,9 @@ class RewardNet(serialize.Serializable, ABC):
         saved by `save` and restored by `load`.
   """
 
-  def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
-               scale: bool = False):
-    """Builds a reward network.
+    def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
+                 scale: bool = False):
+        """Builds a reward network.
 
     Args:
         observation_space: The observation space.
@@ -37,24 +37,24 @@ class RewardNet(serialize.Serializable, ABC):
         scale: Whether to scale the input.
     """
 
-    self.observation_space = observation_space
-    self.action_space = action_space
-    self.scale = scale
+        self.observation_space = observation_space
+        self.action_space = action_space
+        self.scale = scale
 
-    inputs = util.build_inputs(observation_space, action_space, scale)
-    self.obs_ph, self.act_ph, self.next_obs_ph = inputs[:3]
-    self.obs_inp, self.act_inp, self.next_obs_inp = inputs[3:]
+        inputs = util.build_inputs(observation_space, action_space, scale)
+        self.obs_ph, self.act_ph, self.next_obs_ph = inputs[:3]
+        self.obs_inp, self.act_inp, self.next_obs_inp = inputs[3:]
 
-    with tf.variable_scope("theta_network"):
-      self._theta_output, theta_layers = self.build_theta_network(
-          self.obs_inp, self.act_inp)
+        with tf.variable_scope("theta_network"):
+            self._theta_output, theta_layers = self.build_theta_network(
+                self.obs_inp, self.act_inp)
 
-    self._layers = theta_layers
+        self._layers = theta_layers
 
-  @property
-  @abstractmethod
-  def reward_output_train(self):
-    """A Tensor holding the training reward associated with each timestep.
+    @property
+    @abstractmethod
+    def reward_output_train(self):
+        """A Tensor holding the training reward associated with each timestep.
 
     Different concrete subclasses will require different placeholders to be
     filled to calculate this output, but for all subclasses, filling the
@@ -70,11 +70,11 @@ class RewardNet(serialize.Serializable, ABC):
       tf.Tensor: A (None,) shaped Tensor holding
           the training reward associated with each timestep.
     """
-    pass
+        pass
 
-  @property
-  def reward_output_test(self):
-    """A Tensor holding the test reward associated with each timestep.
+    @property
+    def reward_output_test(self):
+        """A Tensor holding the test reward associated with each timestep.
 
     Note this is the reward we use for transfer learning.
 
@@ -92,12 +92,12 @@ class RewardNet(serialize.Serializable, ABC):
       tf.Tensor: A (None,) shaped Tensor holding
         the test reward associated with each timestep.
     """
-    return self._theta_output
+        return self._theta_output
 
-  @abstractmethod
-  def build_theta_network(self, obs_input: tf.Tensor, act_input: tf.Tensor,
-                          ) -> Tuple[tf.Tensor, util.LayersDict]:
-    """Builds the test reward network.
+    @abstractmethod
+    def build_theta_network(self, obs_input: tf.Tensor, act_input: tf.Tensor,
+                            ) -> Tuple[tf.Tensor, util.LayersDict]:
+        """Builds the test reward network.
 
     The output of the network is the same as the reward used for transfer
     learning, and is the Tensor returned by `self.reward_output_test()`.
@@ -115,15 +115,15 @@ class RewardNet(serialize.Serializable, ABC):
           of shape `(None,)`;
         * layers is a dictionary mapping to individual checkpointable layers.
     """
-    pass
+        pass
 
-  def build_summaries(self):
-    tf.summary.histogram("train_reward", self.reward_output_train)
-    tf.summary.histogram("test_reward", self.reward_output_test)
+    def build_summaries(self):
+        tf.summary.histogram("train_reward", self.reward_output_train)
+        tf.summary.histogram("test_reward", self.reward_output_test)
 
 
 class RewardNetShaped(RewardNet):
-  """Abstract reward network with a phi network to shape training reward.
+    """Abstract reward network with a phi network to shape training reward.
 
   This RewardNet formulation matches Equation (4) in the AIRL paper.
   Note that the experiments in Table 2 of the same paper showed shaped
@@ -136,26 +136,26 @@ class RewardNetShaped(RewardNet):
   `build_theta_network()`.
   """
 
-  def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
-               scale: bool = False, discount_factor: float = 0.99):
-    super().__init__(observation_space, action_space, scale=scale)
-    self._discount_factor = discount_factor
+    def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
+                 scale: bool = False, discount_factor: float = 0.99):
+        super().__init__(observation_space, action_space, scale=scale)
+        self._discount_factor = discount_factor
 
-    with tf.variable_scope("phi_network"):
-      res = self.build_phi_network(self.obs_inp, self.next_obs_inp)
-      self._old_shaping_output, self._new_shaping_output, phi_layers = res
+        with tf.variable_scope("phi_network"):
+            res = self.build_phi_network(self.obs_inp, self.next_obs_inp)
+            self._old_shaping_output, self._new_shaping_output, phi_layers = res
 
-    with tf.variable_scope("f_network"):
-      self._shaped_reward_output = (
-        self._theta_output
-        + self._discount_factor * self._new_shaping_output
-        - self._old_shaping_output)
+        with tf.variable_scope("f_network"):
+            self._shaped_reward_output = (
+                    self._theta_output
+                    + self._discount_factor * self._new_shaping_output
+                    - self._old_shaping_output)
 
-    self._layers.update(**phi_layers)
+        self._layers.update(**phi_layers)
 
-  @property
-  def reward_output_train(self):
-    """A Tensor holding the (shaped) training reward of each timestep.
+    @property
+    def reward_output_train(self):
+        """A Tensor holding the (shaped) training reward of each timestep.
 
     Requires the following placeholders to be filled:
 
@@ -169,14 +169,14 @@ class RewardNetShaped(RewardNet):
       tf.Tensor: A (None,) shaped Tensor holding
           the training reward associated with each timestep.
     """
-    return self._shaped_reward_output
+        return self._shaped_reward_output
 
-  @abstractmethod
-  def build_phi_network(self,
-                        obs_input: tf.Tensor,
-                        next_obs_input: tf.Tensor,
-                        ) -> Tuple[tf.Tensor, tf.Tensor, util.LayersDict]:
-    """Build the reward shaping network (disentangles dynamics from reward).
+    @abstractmethod
+    def build_phi_network(self,
+                          obs_input: tf.Tensor,
+                          next_obs_input: tf.Tensor,
+                          ) -> Tuple[tf.Tensor, tf.Tensor, util.LayersDict]:
+        """Build the reward shaping network (disentangles dynamics from reward).
 
     XXX: We could potentially make it easier on the subclasser by requiring
     only one input. ie build_phi_network(obs_input). Later in
@@ -200,12 +200,12 @@ class RewardNetShaped(RewardNet):
           observation inputs, with shape `(None,)`.
         * layers is a dictionary mapping to individual checkpointable layers.
     """
-    pass
+        pass
 
-  def build_summaries(self):
-    super().build_summaries()
-    tf.summary.histogram("shaping_old", self._old_shaping_output)
-    tf.summary.histogram("shaping_new", self._new_shaping_output)
+    def build_summaries(self):
+        super().build_summaries()
+        tf.summary.histogram("shaping_old", self._old_shaping_output)
+        tf.summary.histogram("shaping_new", self._new_shaping_output)
 
 
 def build_basic_theta_network(hid_sizes: Optional[Iterable[int]],
@@ -213,7 +213,7 @@ def build_basic_theta_network(hid_sizes: Optional[Iterable[int]],
                               next_obs_input: Optional[tf.Tensor],
                               act_input: Optional[tf.Tensor],
                               **kwargs: dict):
-  """Builds a reward network depending on specified observations and actions.
+    """Builds a reward network depending on specified observations and actions.
 
   All specified inputs will be preprocessed and then concatenated. If all
   inputs are specified, then it will be a :math:`R(o,a,o')` network.
@@ -233,36 +233,36 @@ def build_basic_theta_network(hid_sizes: Optional[Iterable[int]],
   Raises:
     ValueError: If all of obs_input, next_obs_input and act_input are None.
   """
-  if hid_sizes is None:
-    hid_sizes = [32, 32]
+    if hid_sizes is None:
+        hid_sizes = [32, 32]
 
-  with tf.variable_scope("theta"):
-    inputs = [obs_input, act_input, next_obs_input]
-    inputs = [x for x in inputs if x is not None]
-    if len(inputs) == 0:
-      raise ValueError("Must specify at least one input")
+    with tf.variable_scope("theta"):
+        inputs = [obs_input, act_input, next_obs_input]
+        inputs = [x for x in inputs if x is not None]
+        if len(inputs) == 0:
+            raise ValueError("Must specify at least one input")
 
-    inputs = [tf.layers.flatten(x) for x in inputs]
-    inputs = tf.concat(inputs, axis=1)
-    theta_mlp = util.build_mlp(hid_sizes=hid_sizes, name="reward", **kwargs)
-    theta_output = util.sequential(inputs, theta_mlp)
+        inputs = [tf.layers.flatten(x) for x in inputs]
+        inputs = tf.concat(inputs, axis=1)
+        theta_mlp = util.build_mlp(hid_sizes=hid_sizes, name="reward", **kwargs)
+        theta_output = util.sequential(inputs, theta_mlp)
 
-    return theta_output, theta_mlp
+        return theta_output, theta_mlp
 
 
 class BasicRewardNet(RewardNet, serialize.LayersSerializable):
-  """An unshaped reward net with simple, default settings.
+    """An unshaped reward net with simple, default settings.
 
   Intended to match the reward network trained for
   the original AIRL pendulum experiments. Right now it has a linear function
   approximator for the theta network, not sure if this is what I want.
   """
 
-  def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
-               scale: bool = False, state_only: bool = False,
-               theta_units: Optional[Iterable[int]] = None,
-               theta_kwargs: Optional[dict] = None):
-    """Builds a simple reward network.
+    def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
+                 scale: bool = False, state_only: bool = False,
+                 theta_units: Optional[Iterable[int]] = None,
+                 theta_kwargs: Optional[dict] = None):
+        """Builds a simple reward network.
 
     Args:
       observation_space: The observation space.
@@ -273,31 +273,31 @@ class BasicRewardNet(RewardNet, serialize.LayersSerializable):
           reward network theta.
       theta_kwargs: Arguments passed to `build_basic_theta_network`.
     """
-    self.state_only = state_only
-    self.theta_units = theta_units
-    self.theta_kwargs = theta_kwargs or {}
-    RewardNet.__init__(self, observation_space, action_space, scale=scale)
-    serialize.LayersSerializable.__init__(**locals(), layers=self._layers)
+        self.state_only = state_only
+        self.theta_units = theta_units
+        self.theta_kwargs = theta_kwargs or {}
+        RewardNet.__init__(self, observation_space, action_space, scale=scale)
+        serialize.LayersSerializable.__init__(**locals(), layers=self._layers)
 
-  def build_theta_network(self, obs_input, act_input):
-    act_or_none = None if self.state_only else act_input
-    return build_basic_theta_network(self.theta_units,
-                                     obs_input=obs_input,
-                                     act_input=act_or_none,
-                                     next_obs_input=None,
-                                     **self.theta_kwargs)
+    def build_theta_network(self, obs_input, act_input):
+        act_or_none = None if self.state_only else act_input
+        return build_basic_theta_network(self.theta_units,
+                                         obs_input=obs_input,
+                                         act_input=act_or_none,
+                                         next_obs_input=None,
+                                         **self.theta_kwargs)
 
-  @property
-  def reward_output_train(self):
-    """Training reward is the same as the test reward, since no shaping."""
-    return self.reward_output_test
+    @property
+    def reward_output_train(self):
+        """Training reward is the same as the test reward, since no shaping."""
+        return self.reward_output_test
 
 
 def build_basic_phi_network(hid_sizes: Optional[Iterable[int]],
                             obs_input: tf.Tensor,
                             next_obs_input: tf.Tensor,
                             **kwargs: dict):
-  """Builds a potential network depending on specified observation.
+    """Builds a potential network depending on specified observation.
 
   Arguments:
     hid_sizes: Number of units at each hidden layer. Default is (32, 32).
@@ -308,23 +308,23 @@ def build_basic_phi_network(hid_sizes: Optional[Iterable[int]],
   Returns:
     Tuple[tf.Tensor, tf.Tensor]: potential for the old and new observations.
   """
-  if hid_sizes is None:
-    hid_sizes = (32, 32)
+    if hid_sizes is None:
+        hid_sizes = (32, 32)
 
-  with tf.variable_scope("phi", reuse=tf.AUTO_REUSE):
-    old_o = tf.layers.flatten(obs_input)
-    new_o = tf.layers.flatten(next_obs_input)
+    with tf.variable_scope("phi", reuse=tf.AUTO_REUSE):
+        old_o = tf.layers.flatten(obs_input)
+        new_o = tf.layers.flatten(next_obs_input)
 
-    # Weight share, just with different inputs old_o and new_o
-    phi_mlp = util.build_mlp(hid_sizes=hid_sizes, name="shaping", **kwargs)
-    old_shaping_output = util.sequential(old_o, phi_mlp)
-    new_shaping_output = util.sequential(new_o, phi_mlp)
+        # Weight share, just with different inputs old_o and new_o
+        phi_mlp = util.build_mlp(hid_sizes=hid_sizes, name="shaping", **kwargs)
+        old_shaping_output = util.sequential(old_o, phi_mlp)
+        new_shaping_output = util.sequential(new_o, phi_mlp)
 
-  return old_shaping_output, new_shaping_output, phi_mlp
+    return old_shaping_output, new_shaping_output, phi_mlp
 
 
 class BasicShapedRewardNet(RewardNetShaped, serialize.LayersSerializable):
-  """A shaped reward network with simple, default settings.
+    """A shaped reward network with simple, default settings.
 
   With default parameters this RewardNet has two hidden layers [32, 32]
   for the reward shaping phi network, and a linear function approximator
@@ -336,14 +336,14 @@ class BasicShapedRewardNet(RewardNetShaped, serialize.LayersSerializable):
   pixel observations.
   """
 
-  def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
-               scale: bool = False, state_only: bool = False,
-               discount_factor: float = 0.99,
-               theta_units: Optional[Iterable[int]] = None,
-               theta_kwargs: Optional[dict] = None,
-               phi_units: Optional[Iterable[int]] = None,
-               phi_kwargs: Optional[dict] = None):
-    """Builds a simple shaped reward network.
+    def __init__(self, observation_space: gym.Space, action_space: gym.Space, *,
+                 scale: bool = False, state_only: bool = False,
+                 discount_factor: float = 0.99,
+                 theta_units: Optional[Iterable[int]] = None,
+                 theta_kwargs: Optional[dict] = None,
+                 phi_units: Optional[Iterable[int]] = None,
+                 phi_kwargs: Optional[dict] = None):
+        """Builds a simple shaped reward network.
 
     Args:
       observation_space: The observation space.
@@ -358,23 +358,23 @@ class BasicShapedRewardNet(RewardNetShaped, serialize.LayersSerializable):
           potential network phi.
       phi_kwargs: Arguments passed to `build_basic_phi_network`.
     """
-    self.state_only = state_only
-    self.theta_units = theta_units
-    self.phi_units = phi_units
-    self.theta_kwargs = theta_kwargs or {}
-    self.phi_kwargs = phi_kwargs or {}
-    RewardNetShaped.__init__(self, observation_space, action_space,
-                             scale=scale, discount_factor=discount_factor)
-    serialize.LayersSerializable.__init__(**locals(), layers=self._layers)
+        self.state_only = state_only
+        self.theta_units = theta_units
+        self.phi_units = phi_units
+        self.theta_kwargs = theta_kwargs or {}
+        self.phi_kwargs = phi_kwargs or {}
+        RewardNetShaped.__init__(self, observation_space, action_space,
+                                 scale=scale, discount_factor=discount_factor)
+        serialize.LayersSerializable.__init__(**locals(), layers=self._layers)
 
-  def build_theta_network(self, obs_input, act_input):
-    act_or_none = None if self.state_only else act_input
-    return build_basic_theta_network(self.theta_units,
-                                     obs_input=obs_input,
-                                     act_input=act_or_none,
-                                     next_obs_input=None,
-                                     **self.theta_kwargs)
+    def build_theta_network(self, obs_input, act_input):
+        act_or_none = None if self.state_only else act_input
+        return build_basic_theta_network(self.theta_units,
+                                         obs_input=obs_input,
+                                         act_input=act_or_none,
+                                         next_obs_input=None,
+                                         **self.theta_kwargs)
 
-  def build_phi_network(self, obs_input, next_obs_input):
-    return build_basic_phi_network(self.phi_units, obs_input,
-                                   next_obs_input, **self.phi_kwargs)
+    def build_phi_network(self, obs_input, next_obs_input):
+        return build_basic_phi_network(self.phi_units, obs_input,
+                                       next_obs_input, **self.phi_kwargs)

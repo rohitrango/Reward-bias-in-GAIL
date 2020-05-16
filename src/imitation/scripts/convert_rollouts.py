@@ -9,6 +9,7 @@ import imitation.util as util
 from imitation.util.reward_wrapper import RewardVecEnvWrapper
 import imitation.util.sacred as sacred_util
 import h5py
+import gym_minigrid
 
 """
 A script to convert the rollouts generated from Reward bias repo to a format which is compatible with DAC
@@ -16,19 +17,19 @@ A script to convert the rollouts generated from Reward bias repo to a format whi
 """
 
 # load the desired trajectory by changing the path here.
-trajectories = pickle.load(open("src/imitation/scripts/Hopper-v2/HopperPPO/rollouts/final.pkl", "rb"))
+trajectories = pickle.load(open("rollouts/final_doorkey.pkl", "rb"))
 
 # name of the file saved file after conversion
-out_file = 'Hopper_trpo.h5'
+out_file = 'rollouts/minigrid_doorkey.h5'
 
 observations, actions, length, rewards_traj = [], [], [], []
 
 
 # this can be changed the DAC paper's results are on four expert trajectories for each environment.
-num_trajectories = 4
+num_trajectories = 20
 
 # ep_length 
-ep_length = 1000
+ep_length = len(trajectories[0].acts)
 
 i = 0
 while len(actions) < num_trajectories:
@@ -47,8 +48,11 @@ while len(actions) < num_trajectories:
 
 observations = np.array(observations)
 actions = np.array(actions)
+
 length = np.array(length)
 rewards_traj = np.array(rewards_traj)
+
+print("length is: ", length)
 
 print("shape of observations: ", observations.shape)
 print("shape of actions: ", actions.shape)
@@ -62,3 +66,7 @@ hf.create_dataset('r_B_T', data=rewards_traj)
 
 hf.create_dataset('obs_B_T_Do', data=observations)
 hf.close()
+
+# remove later.
+
+actions = np.save('actions_minigrid.npy', actions)

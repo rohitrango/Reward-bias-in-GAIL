@@ -47,7 +47,11 @@ def rollouts_and_policy(
 
   init_tensorboard: bool,
 ) -> dict:
-  """Trains an expert policy from scratch and saves the rollouts and policy.
+
+
+  """
+
+  Trains an expert policy from scratch and saves the rollouts and policy.
 
   Checkpoints:
     At applicable training steps `step` (where step is either an integer or
@@ -226,7 +230,7 @@ def rollouts_from_policy(
 
 def main_console():
   observer = FileStorageObserver.create(
-      osp.join('/serverdata/rohit/reward_bias/imitation', 'output', 'sacred', 'expert_demos'))
+      osp.join('/serverdata/sid/reward_bias/imitation', 'output', 'sacred', 'expert_demos'))
   expert_demos_ex.observers.append(observer)
   expert_demos_ex.run_commandline()
 
