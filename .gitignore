@@ -154,3 +154,4 @@ dmypy.json
 tests/data/reward_models
 tags
 logs
+tests/*
