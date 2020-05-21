@@ -203,25 +203,11 @@ class DiscrimNet(serialize.Serializable, ABC):
     """
         del steps
 
-        # print("type of act is: ", type(act))
-
-        # if self.terminal:
-        #     obs = obs[-1].reshape((1, obs.shape[1], obs.shape[2], obs.shape[3]))
-        #     act = np.array([act[-1]])
 
         log_act_prob = np.squeeze(
             gen_log_prob_fn(observation=obs, actions=act, logp=True))
 
-        # print("log prob is: ", log_act_prob)
-
-        # if self.terminal:
-        #     log_act_prob = np.array([log_act_prob])
-        # print("shape of log_act_prob is: ", log_act_prob.shape)
         n_gen = len(obs)
-        # print("n_gen  is: ", n_gen)
-        # print("shape of obs is: ", obs.shape)
-        # print("shape of act is: ", act.shape)
-        # if not self.terminal:
         assert obs.shape == next_obs.shape
 
         assert len(act) == n_gen
@@ -235,8 +221,6 @@ class DiscrimNet(serialize.Serializable, ABC):
             self.log_policy_act_prob_ph: log_act_prob,
         }
         rew = self._sess.run(self.policy_train_reward, feed_dict=fd)
-        # print("reward shape is: ", rew.shape)
-        # print("reward is: ", rew)
         assert rew.shape == (n_gen,)
         return rew
 
