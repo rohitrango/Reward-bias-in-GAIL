@@ -194,7 +194,6 @@ class AdversarialTrainer:
                 self.venv_test = reward_wrapper.RewardVecEnvWrapper(
                     self.venv, self.reward_test, terminal_reward=self.reward_test_terminal)
 
-
         self.venv_train_buffering = BufferingWrapper(self.venv_train)
         if normalize:
             self.venv_train_norm = VecNormalize(self.venv_train_buffering, **normalize_kwargs)

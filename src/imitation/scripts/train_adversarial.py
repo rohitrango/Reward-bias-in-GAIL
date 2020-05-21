@@ -21,7 +21,7 @@ import imitation.util as util
 import imitation.util.sacred as sacred_util
 
 
-def save(trainer, save_path):
+def save(trainer, save_path, use_terminal_state_discrim=False):
     """Save discriminator and generator."""
     # We implement this here and not in Trainer since we do not want to actually
     # serialize the whole Trainer (including e.g. expert demonstrations).
@@ -32,6 +32,9 @@ def save(trainer, save_path):
         serialize.save_stable_model(os.path.join(save_path, "gen_policy"),
                                     trainer.gen_policy,
                                     trainer.venv_train_norm)
+        if use_terminal_state_discrim:
+            trainer.discrim_terminal.save(os.path.join(save_path, "discrim_terminal"))
+
     except:
         pass
 
@@ -49,7 +52,8 @@ def train(_run,
           total_timesteps: int,
           n_episodes_eval: int,
           init_tensorboard: bool,
-          checkpoint_interval: int) -> dict:
+          checkpoint_interval: int,
+          use_terminal_state_discrim: bool =False) -> dict:
     """Train an adversarial-network-based imitation learning algorithm.
 
   Plots (turn on using `plot_interval > 0`):
@@ -164,7 +168,8 @@ def train(_run,
     #               minigrid_extractor_small at
     #               0x7f76d270c290 >}, 'n_steps': 2048}, 'use_gail': True, 'trainer_kwargs': {
     #     'disc_minibatch_size': 512, 'gen_replay_buffer_capacity': 16384,
-    #     'disc_batch_size': 16384}, 'num_vec': 8, 'parallel': True, 'max_episode_steps': None, 'scale': True, 'reward_kwargs': {
+    #     'disc_batch_size': 16384}, 'num_vec': 8, 'parallel': True, 'max_episode_steps': None,
+    #     'scale': True, 'reward_kwargs': {
     #     'theta_units': [32, 32], 'phi_units': [32, 32]}, 'use_bc': False}
 
     # gives a graph and a session
@@ -182,7 +187,8 @@ def train(_run,
 
         def callback(epoch):
             if checkpoint_interval > 0 and epoch % checkpoint_interval == 0:
-                save(trainer, os.path.join(log_dir, "checkpoints", f"{epoch:05d}"))
+                save(trainer, os.path.join(log_dir, "checkpoints", f"{epoch:05d}"),
+                     use_terminal_state_discrim=use_terminal_state_discrim)
 
         if init_trainer_kwargs['use_bc']:
             trainer.train(n_epochs=total_timesteps, on_epoch_end=callback)
