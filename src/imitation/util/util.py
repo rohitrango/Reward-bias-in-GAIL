@@ -146,16 +146,7 @@ def init_rl(env: Union[gym.Env, VecEnv],
   Returns:
     An RL algorithm.
   """
-    # 'init_rl_kwargs': {'ent_coef': 0.0,
-    #               'learning_rate': 0.0003,
-    #               'nminibatches': 32,
-    #               'noptepochs': 10,
-    #               'policy_class': 'CnnPolicy',
-    #               'policy_kwargs': {
-    #                                    'cnn_extractor': < function
-    #               minigrid_extractor_small at
-    #               0x7f76d270c290 >}, 'n_steps': 2048}
-
+    
     print("initiating rl policy model kwargs: ", model_kwargs)
     return model_class(policy_class,
                        env, **model_kwargs)  # pytype: disable=not-instantiable
@@ -229,10 +220,6 @@ def build_inputs(observation_space: gym.Space,
                                                   name="next_obs", scale=scale)
     return obs_ph, act_ph, next_obs_ph, obs_inp, act_inp, next_obs_inp
 
-    # else:
-    #     obs_ph, obs_inp = observation_input(observation_space,
-    #                                         name="obs", scale=scale)
-    #     return obs_ph, obs_inp
 
 
 @contextlib.contextmanager
