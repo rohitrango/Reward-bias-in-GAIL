@@ -94,10 +94,6 @@ class RewardVecEnvWrapper(vec_env.VecEnvWrapper):
         print("adding terminal reward")
         rews += np.asarray(dones, dtype='bool').reshape((len(dones),)) * rews_terminal
 
-        #
-
-        # print("shape of rews is: ", rews.shape)
-        # print("shape of obs is: ", obs.shape)
         assert len(rews) == len(obs), "must return one rew for each env"
         done_mask = np.asarray(dones, dtype='bool').reshape((len(dones),))
 

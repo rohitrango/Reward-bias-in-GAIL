@@ -421,4 +421,3 @@ def fast():
         init_rl_kwargs=dict(nminibatches=1),
     )
 
-print("all done")

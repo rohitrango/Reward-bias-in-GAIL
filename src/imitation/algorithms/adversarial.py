@@ -351,10 +351,6 @@ class AdversarialTrainer:
                     'train_stats_terminal': self._discrim_terminal.train_stats,
                 }
 
-                # fetches_terminal = {
-                #     'train_op_out': self._disc_train_op_terminal,
-                #     'train_stats': self._discrim_terminal.train_stats,
-                # }
                 print("passed fetches terminal..")
 
             # if not self.update_discr:
@@ -380,26 +376,8 @@ class AdversarialTrainer:
             self._discrim.clip_params()
 
             if self.use_terminal_state_disc:
-                # print("fetches is: ", fetches)
-                # print("feed is: ", fd)
-
-                # fetched = self._sess.run(fetches, feed_dict=fd)
-                # self._discrim.clip_params()
-                # fetched_terminal = self._sess.run(fetches_terminal, feed_dict=fd_terminal)
 
                 self._discrim_terminal.clip_params()
-
-            # if self.use_terminal_state_disc:
-            # else:
-            #     # fetched_terminal = self._sess.run(fetches_terminal, feed_dict=fd_terminal)
-            #     fetched = self._sess.run(fetches, feed_dict=fd)
-            #     self._discrim.clip_params()
-
-            # if write_summaries:
-            #     self._summary_writer.add_summary(fetched['events'], fetched['step'])
-            #     if self.use_terminal_state_disc:
-            #         self._summary_writer.add_summary(fetched_terminal['events'],
-            #                                          fetched_terminal['step'])
 
             logger.logkv("step", step)
             for k, v in fetched['train_stats'].items():
@@ -421,10 +399,6 @@ class AdversarialTrainer:
         # if not self.use_terminal_state_disc:
         fd = self._build_disc_feed_dict(**kwargs)
         return np.mean(self._sess.run(self.discrim.disc_loss, feed_dict=fd))
-
-        # else:
-        #     fd = self._build_disc_feed_dict(**kwargs)
-        #     return np.mean(self._sess.run(self.discrim.disc_loss, feed_dict=fd))
 
     def train_gen(self, total_timesteps: Optional[int] = None,
                   learn_kwargs: Optional[dict] = None):
@@ -499,24 +473,6 @@ class AdversarialTrainer:
                                f"{self.gen_batch_size} timesteps, have only "
                                f"total_timesteps={total_timesteps})!")
         for epoch in tqdm.tqdm(range(0, n_epochs), desc="epoch"):
-
-            # print("log_dir: ", type(self.env_unwrapped))
-            # venv_unwrapped = util.make_vec_env(self.env_unwrapped, num_vec, seed=seed, parallel=parallel,
-            #                                    max_episode_steps=max_episode_steps)
-            # sample_until_eval = util.rollout.min_episodes(self.n_episodes_eval)
-            # trajs = util.rollout.generate_trajectories(self.gen_policy,
-            #                                            venv_unwrapped,
-            #                                            sample_until=sample_until_eval)
-            # results = util.rollout.rollout_stats(trajs)
-            # mean_reward = results['return_mean']
-            # print("mean reward is ", mean_reward)
-            # summary = tf.Summary(value=[
-            #     tf.Summary.Value(tag="env_reward", simple_value=mean_reward),
-            # ])
-            # # print("value of init_tensorboard is: ", self._init_tensorboard)
-            # self._summary_writer.add_summary(summary, global_step=epoch)
-            #
-            # self.gen_policy.set_env(self.venv_train_norm)
 
             print("starting generator training ========")
             self.train_gen(self.gen_batch_size)
@@ -731,18 +687,6 @@ def init_trainer(env_name: str,
     env = util.make_vec_env(env_name, num_vec, seed=seed, parallel=parallel,
                             log_dir=log_dir, max_episode_steps=max_episode_steps)
 
-    # seems like a way to instantiate the generator.
-    # init rl keywords contains the information like the RL algorithm to be used etc.
-
-    # 'init_rl_kwargs': {'ent_coef': 0.0,
-    #               'learning_rate': 0.0003,
-    #               'nminibatches': 32,
-    #               'noptepochs': 10,
-    #               'policy_class': 'CnnPolicy',
-    #               'policy_kwargs': {
-    #               'cnn_extractor': < function
-    #                minigrid_extractor_small at
-    #               0x7f76d270c290 >}, 'n_steps': 2048}
     gen_policy = util.init_rl(env, verbose=1, **init_rl_kwargs)
 
     terminal_state_discrim = None
