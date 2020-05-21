@@ -136,6 +136,12 @@ def train(_run,
     with open(rollout_path, "rb") as f:
         expert_trajs = pickle.load(f)
 
+    # print("type of expert trajs is: ", type(expert_trajs))
+    # print("type of expert trajs 0 is: ", type(expert_trajs[0]))
+    # print("length of expert trajs is: ", len(expert_trajs))
+    # print("shape of expert trajs is: ", expert_trajs[0].acts.shape)
+    # print("shape of expert trajs is: ", expert_trajs[1].acts.shape)
+
     # only use a certain subset of the trajectories
     if n_expert_demos is not None:
         assert len(expert_trajs) >= n_expert_demos
@@ -144,6 +150,7 @@ def train(_run,
     # get stats about length, returns etc from the expert data.
     # this is similar to the do_rollout function.
     expert_stats = util.rollout.rollout_stats(expert_trajs)
+    print("expert stats are: ", expert_stats)
     #
     # kwargs: {'discrim_kwargs': {'build_discrim_net_kwargs': {'cnn_extractor': < function minigrid_extractor_small at
     #                             0x7f76d270c290 >}, 'reward_type': 'positive'},
@@ -194,6 +201,17 @@ def train(_run,
                                                    sample_until=sample_until_eval)
         results["imit_stats"] = util.rollout.rollout_stats(trajs)
         results["expert_stats"] = expert_stats
+
+        # env = util.make_vec_env(env_name, 4)
+        # trajs_n = util.rollout.generate_trajectories(trainer.gen_policy,
+        #                                              env, sample_until=sample_until_eval)
+        #
+        # results_n = util.rollout.rollout_stats(trajs_n)
+
+        print("expert stats are: ", results["expert_stats"])
+        print("policy stats are: ", results["imit_stats"])
+        # print("policy stats with correct env: ", results_n)
+
         return results
 
 

@@ -43,6 +43,7 @@ class DiscrimNet(serialize.Serializable, ABC):
         self._disc_logits_gen_is_high = None  # type: tf.Tensor
 
         self.build_graph()
+        # self.terminal = terminal
 
         assert self._disc_loss is not None
         assert self._policy_train_reward is not None
@@ -201,11 +202,28 @@ class DiscrimNet(serialize.Serializable, ABC):
         The rewards. Its shape is `(batch_size,)`.
     """
         del steps
+
+        # print("type of act is: ", type(act))
+
+        # if self.terminal:
+        #     obs = obs[-1].reshape((1, obs.shape[1], obs.shape[2], obs.shape[3]))
+        #     act = np.array([act[-1]])
+
         log_act_prob = np.squeeze(
             gen_log_prob_fn(observation=obs, actions=act, logp=True))
 
+        # print("log prob is: ", log_act_prob)
+
+        # if self.terminal:
+        #     log_act_prob = np.array([log_act_prob])
+        # print("shape of log_act_prob is: ", log_act_prob.shape)
         n_gen = len(obs)
+        # print("n_gen  is: ", n_gen)
+        # print("shape of obs is: ", obs.shape)
+        # print("shape of act is: ", act.shape)
+        # if not self.terminal:
         assert obs.shape == next_obs.shape
+
         assert len(act) == n_gen
         assert log_act_prob.shape == (n_gen,)
 
@@ -217,6 +235,8 @@ class DiscrimNet(serialize.Serializable, ABC):
             self.log_policy_act_prob_ph: log_act_prob,
         }
         rew = self._sess.run(self.policy_train_reward, feed_dict=fd)
+        # print("reward shape is: ", rew.shape)
+        # print("reward is: ", rew)
         assert rew.shape == (n_gen,)
         return rew
 
@@ -392,7 +412,8 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
             build_discrim_net: DiscrimNetBuilder = None,
             build_discrim_net_kwargs: Optional[dict] = None,
             scope="discrim_network",
-            scale: bool = False):
+            scale: bool = False,
+            ):
         """Construct discriminator network.
 
     Args:
@@ -429,6 +450,8 @@ class DiscrimNetGAIL(DiscrimNet, serialize.LayersSerializable):
         self._scale = scale
         self._build_discrim_net = build_discrim_net
         self._build_discrim_net_kwargs = build_discrim_net_kwargs or {}
+
+        # self.terminal = terminal
 
         self._disc_mlp = None
         # Builds graph via call to `self.build_graph()`.

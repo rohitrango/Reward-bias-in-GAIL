@@ -290,7 +290,8 @@ def empty():
 
 @train_ex.named_config
 def doorkey():
-    total_timesteps = int(1e6)
+    # total_timesteps = int(1e6)
+    total_timesteps = int(1000)
     gen_batch_size = 2048 * 8
     env_name = 'MiniGrid-DoorKey-6x6-v0'
     init_trainer_kwargs = dict()
@@ -304,7 +305,7 @@ def doorkey():
         build_discrim_net_kwargs=dict(
             cnn_extractor=minigrid_extractor_small,
         ),
-        reward_type='positive',
+        reward_type='negative',
     )
     rollout_hint = 'DoorKeyPPO'
     normalize = False

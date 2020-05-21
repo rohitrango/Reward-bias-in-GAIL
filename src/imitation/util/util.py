@@ -199,7 +199,7 @@ def sequential(inputs: tf.Tensor,
 def build_inputs(observation_space: gym.Space,
                  action_space: gym.Space = None,
                  scale: bool = False,
-                 use_terminal_state: bool = False) -> Tuple[tf.Tensor, ...]:
+                 ) -> Tuple[tf.Tensor, ...]:
     """Builds placeholders and processed input Tensors.
 
   Observation `obs_*` and `next_obs_*` placeholders and processed input
