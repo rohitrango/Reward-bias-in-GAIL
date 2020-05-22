@@ -63,6 +63,8 @@ class RewardVecEnvWrapper(vec_env.VecEnvWrapper):
         return self.venv.step_async(actions)
 
     def step_wait(self):
+
+        # print("venv is: ", self.venv)
         obs, old_rews, dones, infos = self.venv.step_wait()
 
         # print("dones is: ", dones)
@@ -85,14 +87,15 @@ class RewardVecEnvWrapper(vec_env.VecEnvWrapper):
                               self._step_counter)
 
         # if np.all(dones == True) and self.terminal_reward is not None:
-        rews_terminal = self.terminal_reward(self._old_obs,
-                                             self._actions,
-                                             obs_fixed,
-                                             self._step_counter)
+        if self.terminal_reward is not None:
+            rews_terminal = self.terminal_reward(self._old_obs,
+                                                 self._actions,
+                                                 obs_fixed,
+                                                 self._step_counter)
 
-        print("shape of rews_terminal is: ", rews_terminal.shape)
-        print("adding terminal reward")
-        rews += np.asarray(dones, dtype='bool').reshape((len(dones),)) * rews_terminal
+            print("shape of rews_terminal is: ", rews_terminal.shape)
+            print("adding terminal reward")
+            rews += np.asarray(dones, dtype='bool').reshape((len(dones),)) * rews_terminal
 
         assert len(rews) == len(obs), "must return one rew for each env"
         done_mask = np.asarray(dones, dtype='bool').reshape((len(dones),))

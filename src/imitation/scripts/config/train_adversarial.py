@@ -270,7 +270,8 @@ def walker():
 def empty():
     total_timesteps = int(2e5)
     gen_batch_size = 2048 * 8
-    env_name = 'MiniGrid-Empty-Random-6x6-v0'
+    # env_name = 'MiniGrid-Empty-Random-6x6-v0'
+    env_name = 'MiniGrid-Empty-6x6-v2'
     init_trainer_kwargs = dict()
     init_trainer_kwargs['init_rl_kwargs'] = dict(
         policy_class='CnnPolicy',
@@ -282,9 +283,9 @@ def empty():
         build_discrim_net_kwargs=dict(
             cnn_extractor=minigrid_extractor_small,
         ),
-        reward_type='positive',
+        reward_type='negative',
     )
-    rollout_hint = 'EmptyPPO'
+    rollout_hint = 'PPO'
     normalize = False
 
 
