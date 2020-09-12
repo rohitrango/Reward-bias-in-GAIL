@@ -227,6 +227,11 @@ def hopper():
   rollout_hint = "hopper"
   total_timesteps = 2e6
 
+@train_ex.named_config
+def lunarlander():
+  env_name = "LunarLander-v2"
+  rollout_hint = "PPO2"
+  total_timesteps = int(2e6)
 
 @train_ex.named_config
 def humanoid():

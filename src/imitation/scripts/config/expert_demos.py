@@ -86,6 +86,11 @@ def cartpole():
   env_name = "CartPole-v1"
   total_timesteps = int(1e5)
 
+@expert_demos_ex.named_config
+def lunarlander():
+  env_name = "LunarLander-v2"
+  total_timesteps = int(1e6)
+
 
 @expert_demos_ex.named_config
 def half_cheetah():
