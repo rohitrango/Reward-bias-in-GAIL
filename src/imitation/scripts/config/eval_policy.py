@@ -6,14 +6,13 @@ from imitation.util import util
 
 eval_policy_ex = sacred.Experiment("eval_policy")
 
-
 @eval_policy_ex.config
 def replay_defaults():
   env_name = "CartPole-v1"  # environment to evaluate in
   eval_n_timesteps = int(1e4)  # Min timesteps to evaluate, optional.
   eval_n_episodes = None  # Num episodes to evaluate, optional.
-  num_vec = 1  # number of environments in parallel
-  parallel = False  # Use SubprocVecEnv (generally faster if num_vec>1)
+  num_vec = 2  # number of environments in parallel
+  parallel = True  # Use SubprocVecEnv (generally faster if num_vec>1)
   max_episode_steps = None  # Set to positive int to limit episode horizons
 
   render = True  # render to screen
@@ -26,6 +25,13 @@ def replay_defaults():
 
   reward_type = None  # Optional: override with reward of this type
   reward_path = None  # Path of serialized reward to load
+
+@eval_policy_ex.named_config
+def lunarlander():
+    env_name = "LunarLander-v2"
+    eval_n_episodes = 100
+    eval_n_timesteps = None
+    render = False
 
 
 @eval_policy_ex.config

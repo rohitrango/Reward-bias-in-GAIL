@@ -5,6 +5,7 @@ import time
 from typing import Optional
 
 from sacred.observers import FileStorageObserver
+from stable_baselines.common.vec_env import VecNormalize
 from stable_baselines.common.vec_env import VecEnvWrapper
 import tensorflow as tf
 
@@ -83,6 +84,7 @@ def eval_policy(_run,
   Returns:
     Return value of `imitation.util.rollout.rollout_stats()`.
   """
+
   os.makedirs(log_dir, exist_ok=True)
   sacred_util.build_sacred_symlink(log_dir, _run)
 
@@ -92,6 +94,8 @@ def eval_policy(_run,
   venv = util.make_vec_env(env_name, num_vec, seed=_seed,
                            parallel=parallel, log_dir=log_dir,
                            max_episode_steps=max_episode_steps)
+  venv = VecNormalize(venv, training=False, norm_reward=False)
+  venv = venv.load(policy_path + "/vec_normalize.pkl", venv)
 
   if render:
     venv = InteractiveRender(venv, render_fps)

@@ -56,6 +56,7 @@ def main():
     env = splits
     results = []
     for file in args.files:
+        print(file)
         results.extend(pu.load_results(file, success=args.success, length=args.length))
 
     # Print details
