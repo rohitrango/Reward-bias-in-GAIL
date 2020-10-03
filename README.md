@@ -1,6 +1,15 @@
 [![CircleCI](https://circleci.com/gh/HumanCompatibleAI/imitation.svg?style=svg)](https://circleci.com/gh/HumanCompatibleAI/imitation)
 [![codecov](https://codecov.io/gh/HumanCompatibleAI/imitation/branch/master/graph/badge.svg)](https://codecov.io/gh/HumanCompatibleAI/imitation)
 
+# Addressing reward bias in GAIL
+Implementation of the paper [Addressing reward bias in Adversarial Imitation Learning with neutral reward functions](https://arxiv.org/abs/2009.09467) in Tensorflow. 
+
+To run the experiments, do the following:
+1. Install the repository (instructions below).
+2. Save trajectories using PPO agents.
+3. Use various reward functions to run GAIL agents (with keywords `positive_reward`, `negative_reward`, `neutral`, and `neutral_b`). 
+
+
 # Imitation Learning Baseline Implementations
 
 This project aims to provide clean implementations of imitation learning algorithms.
@@ -39,3 +48,15 @@ which is automatically run by Travis CI.
     The exact coverage required by CodeCov depends on the previous
     code coverage %. Files in `imitation/{examples,scripts}/` have no
     coverage requirements.
+
+
+# Citation
+If you like this work and want to use it in your research, consider citing us:
+```
+@article{jena2020addressing,
+  title={Addressing reward bias in Adversarial Imitation Learning with neutral reward functions},
+  author={Jena, Rohit and Agrawal, Siddharth and Sycara, Katia},
+  journal={arXiv preprint arXiv:2009.09467},
+  year={2020}
+}
+```
